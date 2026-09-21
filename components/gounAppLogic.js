@@ -230,12 +230,13 @@ export function initGounApp(root, supabase) {
       `;
       btn.addEventListener('click', () => selectLabProduct(p, btn));
       const heart = btn.querySelector('.wish-heart');
-      heart.addEventListener('click', e => {
+      heart.addEventListener('click', async e => {
         e.stopPropagation();
-        const idx = wishlist.findIndex(w => w.name === p.name);
-        if (idx === -1) { wishlist.push(p); heart.classList.add('active'); showToast('위시리스트에 담았어요'); }
-        else { wishlist.splice(idx, 1); heart.classList.remove('active'); }
-        renderWishlist();
+        if (!currentUserId) { showToast('로그인 후 이용해주세요'); return; }
+        const inList = wishlist.some(w => w.name === p.name);
+        heart.classList.toggle('active', !inList);
+        if (inList) await removeFromWishlist(p.name);
+        else await addToWishlist(p);
       });
       list.appendChild(btn);
     });
@@ -462,11 +463,17 @@ export function initGounApp(root, supabase) {
   const { data: authSubscription } = supabase.auth.onAuthStateChange((event, session) => {
     if (!authListenerActive) return;
     if (event === 'SIGNED_IN' && session) {
+      currentUserId = session.user.id;
       updateProfileUI(session.user);
+      loadWishlist(currentUserId);
       showToast('환영해요! 고운을 시작해볼까요');
       goTo('home');
     } else if (event === 'SIGNED_OUT') {
+      currentUserId = null;
+      wishlist = [];
       updateProfileUI(null);
+      renderWishlist();
+      renderLabProducts(document.getElementById('lab-search')?.value || '');
       showToast('로그아웃 됐어요');
       goTo('login');
     }
@@ -474,7 +481,9 @@ export function initGounApp(root, supabase) {
 
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (session) {
+      currentUserId = session.user.id;
       updateProfileUI(session.user);
+      loadWishlist(currentUserId);
       goTo('home');
     }
   });
@@ -563,8 +572,54 @@ export function initGounApp(root, supabase) {
     });
   });
 
-  /* ---------- Wishlist ---------- */
+  /* ---------- Wishlist (persisted in Supabase, per user) ---------- */
   let wishlist = [];
+  let currentUserId = null;
+
+  async function loadWishlist(userId) {
+    const { data, error } = await supabase
+      .from('wishlist_items')
+      .select('brand, name, price, color, type')
+      .eq('user_id', userId);
+    if (error) { showToast('위시리스트를 불러오지 못했어요'); return; }
+    wishlist = data || [];
+    renderWishlist();
+    renderLabProducts(document.getElementById('lab-search')?.value || '');
+  }
+
+  async function addToWishlist(product) {
+    const { brand, name, price, color, type } = product;
+    wishlist.push({ brand, name, price, color, type });
+    renderWishlist();
+    showToast('위시리스트에 담았어요');
+    const { error } = await supabase
+      .from('wishlist_items')
+      .insert({ user_id: currentUserId, brand, name, price, color, type });
+    if (error) {
+      wishlist = wishlist.filter(w => w.name !== name);
+      renderWishlist();
+      renderLabProducts(document.getElementById('lab-search')?.value || '');
+      showToast('저장에 실패했어요, 다시 시도해주세요');
+    }
+  }
+
+  async function removeFromWishlist(name) {
+    const removed = wishlist.find(w => w.name === name);
+    wishlist = wishlist.filter(w => w.name !== name);
+    renderWishlist();
+    const { error } = await supabase
+      .from('wishlist_items')
+      .delete()
+      .eq('user_id', currentUserId)
+      .eq('name', name);
+    if (error && removed) {
+      wishlist.push(removed);
+      renderWishlist();
+      renderLabProducts(document.getElementById('lab-search')?.value || '');
+      showToast('삭제에 실패했어요, 다시 시도해주세요');
+    }
+  }
+
   function renderWishlist() {
     const list = document.getElementById('wishlist-list');
     const emptyMsg = document.getElementById('wishlist-empty-msg');
