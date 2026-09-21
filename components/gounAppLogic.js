@@ -423,6 +423,46 @@ export function initGounApp(root, supabase) {
     if (emailEl) emailEl.textContent = user.email || '';
   }
 
+  async function loadProfilePoints(userId) {
+    let { data: profile } = await supabase
+      .from('profiles')
+      .select('points')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!profile) {
+      await supabase.from('profiles').insert({ id: userId, points: 500 });
+      await supabase.from('point_history').insert({ user_id: userId, label: '가입 환영 포인트', amount: 500 });
+      profile = { points: 500 };
+    }
+
+    const pointsEl = document.getElementById('points-num');
+    if (pointsEl) pointsEl.textContent = `${profile.points.toLocaleString('ko-KR')}P`;
+
+    const { data: history } = await supabase
+      .from('point_history')
+      .select('label, amount')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    const list = document.getElementById('history-list');
+    const emptyMsg = document.getElementById('history-empty');
+    if (!list || !emptyMsg) return;
+    if (!history || history.length === 0) {
+      list.innerHTML = '';
+      emptyMsg.classList.remove('hidden');
+      return;
+    }
+    emptyMsg.classList.add('hidden');
+    list.innerHTML = history.map(h => `
+      <div class="history-row">
+        <span><i data-icon="${h.amount >= 0 ? 'shopping-bag' : 'flask'}"></i> ${h.label}</span>
+        <span class="${h.amount >= 0 ? 'plus' : 'minus'}">${h.amount >= 0 ? '+' : ''}${h.amount.toLocaleString('ko-KR')}P</span>
+      </div>
+    `).join('');
+    paintIcons(list);
+  }
+
   const loginBtn = document.getElementById('login-continue-btn');
   loginBtn?.addEventListener('click', async () => {
     const email = document.getElementById('login-email')?.value.trim();
@@ -490,6 +530,7 @@ export function initGounApp(root, supabase) {
       currentUserId = session.user.id;
       updateProfileUI(session.user);
       loadWishlist(currentUserId);
+      loadProfilePoints(currentUserId);
       showToast('환영해요! 고운을 시작해볼까요');
       goTo('home');
     } else if (event === 'SIGNED_OUT') {
@@ -498,6 +539,10 @@ export function initGounApp(root, supabase) {
       updateProfileUI(null);
       renderWishlist();
       renderLabProducts(document.getElementById('lab-search')?.value || '');
+      const pointsEl = document.getElementById('points-num');
+      if (pointsEl) pointsEl.textContent = '0P';
+      document.getElementById('history-list').innerHTML = '';
+      document.getElementById('history-empty')?.classList.add('hidden');
       showToast('로그아웃 됐어요');
       goTo('login');
     }
@@ -508,6 +553,7 @@ export function initGounApp(root, supabase) {
       currentUserId = session.user.id;
       updateProfileUI(session.user);
       loadWishlist(currentUserId);
+      loadProfilePoints(currentUserId);
       goTo('home');
     }
   });

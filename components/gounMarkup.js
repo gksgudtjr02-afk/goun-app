@@ -492,8 +492,8 @@ export const GOUN_MARKUP = `
       </div>
 
       <div class="points-card">
-        <span class="muted small">이번 달 적립 포인트</span>
-        <p class="points-num">42,300P</p>
+        <span class="muted small">내 포인트</span>
+        <p class="points-num" id="points-num">0P</p>
         <div class="points-actions">
           <button class="btn-primary">현금 전환</button>
           <button class="btn-outline">기프티콘 교환</button>
@@ -501,20 +501,8 @@ export const GOUN_MARKUP = `
       </div>
 
       <h3 class="section-title">포인트 내역</h3>
-      <div class="history-list">
-        <div class="history-row">
-          <span><i data-icon="shopping-bag"></i> 영상 내 제품 구매 적립</span>
-          <span class="plus">+1,200P</span>
-        </div>
-        <div class="history-row">
-          <span><i data-icon="user-plus"></i> 친구 초대 보너스</span>
-          <span class="plus">+500P</span>
-        </div>
-        <div class="history-row">
-          <span><i data-icon="flask"></i> 체험권 구매 사용</span>
-          <span class="minus">-500P</span>
-        </div>
-      </div>
+      <div class="history-list" id="history-list"></div>
+      <p class="muted center small hidden" id="history-empty">아직 포인트 내역이 없어요</p>
 
       <button class="advertiser-link" data-nav="adinquiry">
         <span>광고주이신가요?</span>
