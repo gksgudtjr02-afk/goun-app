@@ -71,18 +71,20 @@ const COLOR_TYPES = {
   winter:{ label:'겨울 쿨톤', desc:'선명하고 강한 쿨톤이에요. 또렷하고 대비감 있는 색이 잘 어울려요.', palette:['#C0163E','#1B1B3A','#5D2E8C','#0F5C8C','#E5006D'] },
 };
 
-const RANK_LOOKS = [
+const RANK_LOOKS_FALLBACK = [
   {rank:1, flag:'🇯🇵', name:'Sakura', likes:'21.7k', title:'광채 스킨케어 루틴'},
   {rank:2, flag:'🇰🇷', name:'민지', likes:'12.4k', title:'코랄 쿠션 메이크업'},
   {rank:3, flag:'🇺🇸', name:'Taylor', likes:'8.1k', title:'데일리 립 컬러'},
   {rank:4, flag:'🇩🇪', name:'Anna', likes:'6.3k', title:'수분 폭탄 루틴'},
   {rank:5, flag:'🇻🇳', name:'Linh', likes:'5.6k', title:'커버력 베이스 메이크업'},
 ];
-const RANK_CREATORS = [
+const RANK_CREATORS_FALLBACK = [
   {rank:1, flag:'🇯🇵', name:'Sakura', likes:'포인트 8.2만', title:'파워 크리에이터'},
   {rank:2, flag:'🇰🇷', name:'민지', likes:'포인트 4.2만', title:'파워 크리에이터'},
   {rank:3, flag:'🇺🇸', name:'Taylor', likes:'포인트 3.1만', title:'일반 크리에이터'},
 ];
+let RANK_LOOKS = RANK_LOOKS_FALLBACK;
+let RANK_CREATORS = RANK_CREATORS_FALLBACK;
 
 const AD_BASE_PRICE = { feed: 700000, hero: 500000, lab: 300000, rank: 200000 };
 const AD_DURATION_MULT = { 7: 1, 14: 1.8, 30: 3.2 };
@@ -569,6 +571,22 @@ export function initGounApp(root, supabase) {
   });
 
   /* ---------- Weekly Ranking ---------- */
+  async function loadRankings() {
+    const { data, error } = await supabase
+      .from('rankings')
+      .select('category, rank, flag, name, likes, title')
+      .order('rank', { ascending: true });
+    if (!error && data && data.length) {
+      RANK_LOOKS = data.filter(r => r.category === 'look');
+      RANK_CREATORS = data.filter(r => r.category === 'creator');
+    } else {
+      RANK_LOOKS = RANK_LOOKS_FALLBACK;
+      RANK_CREATORS = RANK_CREATORS_FALLBACK;
+    }
+    const activeTab = document.querySelector('.rank-tab.active')?.getAttribute('data-rank') || 'look';
+    renderRanking(activeTab);
+  }
+
   function renderRanking(type) {
     const list = document.getElementById('rank-list');
     if (!list) return;
@@ -734,6 +752,7 @@ export function initGounApp(root, supabase) {
   renderColorResult('spring');
   loadProducts();
   renderRanking('look');
+  loadRankings();
   renderWishlist();
   paintIcons(root);
 
