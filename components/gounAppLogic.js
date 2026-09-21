@@ -42,8 +42,9 @@ const ICONS = {
   'log-out':'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>'
 };
 
-/* ---------- Mock feed data ---------- */
-const FEED = [
+/* ---------- Feed data: loaded from Supabase, with a mock fallback ---------- */
+let FEED = [];
+const FEED_FALLBACK = [
   {flag:'🇰🇷', name:'민지', likes:'12.4k', cat:'base', caption:'"이 쿠션 하나로 끝! 완전 강추"'},
   {flag:'🇺🇸', name:'Taylor', likes:'8.1k', cat:'lip', caption:'"이 립 컬러 완전 내 스타일"'},
   {flag:'🇯🇵', name:'Sakura', likes:'21.7k', cat:'skin', hot:true, caption:'"세럼 하나로 광채 피부 완성"'},
@@ -120,6 +121,16 @@ export function initGounApp(root, supabase) {
       grid.appendChild(item);
     });
     paintIcons(grid);
+  }
+
+  async function loadFeed() {
+    const { data, error } = await supabase
+      .from('feed_items')
+      .select('flag, name, likes, cat, hot, caption')
+      .order('created_at', { ascending: false });
+    FEED = (!error && data && data.length) ? data : FEED_FALLBACK;
+    const activeFilter = document.querySelector('.chip.active')?.getAttribute('data-filter') || 'all';
+    renderGrid(activeFilter);
   }
 
   /* ---------- Navigation ---------- */
@@ -707,7 +718,7 @@ export function initGounApp(root, supabase) {
 
   /* ---------- Init ---------- */
   document.getElementById('bottom-nav').style.display = 'none';
-  renderGrid();
+  loadFeed();
   renderLabProducts();
   renderColorResult('spring');
   renderRanking('look');
