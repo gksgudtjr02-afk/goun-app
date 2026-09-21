@@ -53,7 +53,7 @@ const FEED_FALLBACK = [
   {flag:'🇩🇪', name:'Anna', likes:'9.9k', cat:'skin', caption:'"수분 폭탄 스킨케어 루틴"'},
 ];
 
-const LAB_PRODUCTS = [
+const LAB_PRODUCTS_FALLBACK = [
   {brand:'페리페라', name:'잉크벨벳 #01 코랄', price:'12,000원', color:'#D4537E', type:'lip', locked:false},
   {brand:'클리오', name:'러스터 립 틴트', price:'15,000원', color:'#E0997B', type:'lip', locked:false},
   {brand:'에뛰드', name:'드로잉 틴트 브라운', price:'9,900원', color:'#B54848', type:'lip', locked:false},
@@ -61,6 +61,7 @@ const LAB_PRODUCTS = [
   {brand:'3CE', name:'벨벳 립 틴트', price:'19,000원', color:'#7A2E3A', type:'lip', locked:true},
   {brand:'이니스프리', name:'노세범 쿠션', price:'18,000원', color:'#E8C9A8', type:'base', locked:true},
 ];
+let LAB_PRODUCTS = LAB_PRODUCTS_FALLBACK;
 const TYPE_ICON = { lip:'droplet', base:'flask', skin:'bottle' };
 
 const COLOR_TYPES = {
@@ -214,6 +215,16 @@ export function initGounApp(root, supabase) {
 
   /* ---------- Virtual Lab: product search & select ---------- */
   let selectedProduct = null;
+
+  async function loadProducts() {
+    const { data, error } = await supabase
+      .from('products')
+      .select('brand, name, price, color, type, locked')
+      .order('created_at', { ascending: true });
+    LAB_PRODUCTS = (!error && data && data.length) ? data : LAB_PRODUCTS_FALLBACK;
+    renderLabProducts(document.getElementById('lab-search')?.value || '');
+    renderColorResult(currentColorType);
+  }
 
   function renderLabProducts(keyword = '') {
     const list = document.getElementById('lab-products');
@@ -721,6 +732,7 @@ export function initGounApp(root, supabase) {
   loadFeed();
   renderLabProducts();
   renderColorResult('spring');
+  loadProducts();
   renderRanking('look');
   renderWishlist();
   paintIcons(root);
