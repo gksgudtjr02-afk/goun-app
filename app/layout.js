@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
   title: "고운 — Discover Your K-Beauty Match",
@@ -26,7 +27,10 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&display=swap"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
