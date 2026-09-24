@@ -508,6 +508,8 @@ export const GOUN_MARKUP = `
         <span>광고주이신가요?</span>
         <span class="advertiser-link-cta">광고 문의하기 <i data-icon="chevron-right"></i></span>
       </button>
+
+      <button class="delete-account-link" id="delete-account-btn">회원 탈퇴</button>
     </div>
   </section>
 

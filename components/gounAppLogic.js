@@ -512,6 +512,32 @@ export function initGounApp(root, supabase) {
     await supabase.auth.signOut();
   });
 
+  document.getElementById('delete-account-btn')?.addEventListener('click', async () => {
+    if (!currentUserId) { showToast('로그인 후 이용해주세요'); return; }
+    const confirmed = window.confirm('정말 탈퇴하시겠어요? 위시리스트, 포인트 등 모든 데이터가 영구적으로 삭제되고 되돌릴 수 없어요.');
+    if (!confirmed) return;
+
+    const btn = document.getElementById('delete-account-btn');
+    btn.disabled = true;
+    btn.textContent = '탈퇴 처리 중...';
+
+    try {
+      const res = await fetch('/api/delete-account', { method: 'POST' });
+      const body = await res.json();
+      if (!res.ok) {
+        showToast(body.error || '탈퇴 처리에 실패했어요');
+        return;
+      }
+      await supabase.auth.signOut();
+      showToast('탈퇴가 완료됐어요. 그동안 이용해주셔서 감사해요');
+    } catch {
+      showToast('탈퇴 처리에 실패했어요, 다시 시도해주세요');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '회원 탈퇴';
+    }
+  });
+
   const OAUTH_PROVIDERS = { 'social-kakao-btn': 'kakao', 'social-apple-btn': 'apple', 'social-google-btn': 'google' };
   Object.entries(OAUTH_PROVIDERS).forEach(([btnId, provider]) => {
     document.getElementById(btnId)?.addEventListener('click', async () => {
