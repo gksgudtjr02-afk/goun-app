@@ -610,3 +610,28 @@ html,body{
 }
 .ad-upload-box [data-icon]{ font-size:28px; }
 .ad-upload-box span:nth-child(2){ font-size:13px; color: var(--ink-soft); font-weight:600; }
+
+/* ---------- Legal pages (terms / privacy) ---------- */
+.legal-page{
+  max-width: 640px; margin: 0 auto; padding: 32px 24px 80px;
+  background: var(--bg); min-height: 100vh; min-height: 100dvh;
+}
+.legal-page .legal-back{
+  display:inline-flex; align-items:center; gap:6px;
+  color: var(--ink-soft); text-decoration:none; font-size:14px; font-weight:600;
+  margin-bottom:24px;
+}
+.legal-page h1{ font-size:22px; margin: 0 0 4px; }
+.legal-page .legal-meta{ color: var(--ink-faint); font-size:13px; margin: 0 0 32px; }
+.legal-page h2{ font-size:16px; margin: 32px 0 10px; color: var(--ink); }
+.legal-page p, .legal-page li{ font-size:14px; line-height:1.7; color: var(--ink-soft); }
+.legal-page ul, .legal-page ol{ padding-left: 20px; margin: 8px 0; }
+.legal-page table{ width:100%; border-collapse: collapse; margin: 12px 0; font-size:13.5px; }
+.legal-page th, .legal-page td{
+  border:1px solid var(--line); padding:8px 10px; text-align:left; color: var(--ink-soft);
+}
+.legal-page th{ background: var(--surface-sunken); color: var(--ink); font-weight:700; }
+.legal-page .legal-note{
+  background: var(--coral-tint); color: var(--coral-deep); border-radius: var(--radius-md);
+  padding:12px 14px; font-size:13px; line-height:1.6; margin-bottom:28px;
+}

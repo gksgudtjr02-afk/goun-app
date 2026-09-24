@@ -45,7 +45,7 @@ export const GOUN_MARKUP = `
       </div>
 
       <button class="btn-primary btn-block" id="login-continue-btn">시작하기</button>
-      <p class="muted center small login-terms">계속 진행하면 <span class="link-text">이용약관</span> 및 <span class="link-text">개인정보처리방침</span>에 동의하게 됩니다</p>
+      <p class="muted center small login-terms">계속 진행하면 <a href="/terms" target="_blank" class="link-text">이용약관</a> 및 <a href="/privacy" target="_blank" class="link-text">개인정보처리방침</a>에 동의하게 됩니다</p>
     </div>
   </section>
 
