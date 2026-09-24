@@ -52,7 +52,7 @@ export const GOUN_MARKUP = `
   <!-- ===================== 2. HOME (DISCOVERY GRID) ===================== -->
   <section id="view-home" class="view">
     <header class="home-header">
-      <span class="brand"><span class="goun-header-mark" aria-label="고운"></span></span>
+      <span class="brand"><span class="brand-en">GOUN</span><span class="goun-header-mark" aria-label="고운"></span></span>
       <div class="header-icons">
         <button class="icon-btn" data-nav="wishlist" aria-label="위시리스트"><i data-icon="heart"></i></button>
         <button class="icon-btn" aria-label="검색"><i data-icon="search"></i></button>
