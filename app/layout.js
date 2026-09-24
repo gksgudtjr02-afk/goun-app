@@ -4,12 +4,18 @@ import { Analytics } from "@vercel/analytics/next";
 export const metadata = {
   title: "고운 — Discover Your K-Beauty Match",
   description: "고운(GOUN): AI 스킨체크, 퍼스널 컬러 진단, K-뷰티 커머스 서비스",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "고운",
+  },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#FF4D6D",
 };
 
 export default function RootLayout({ children }) {
