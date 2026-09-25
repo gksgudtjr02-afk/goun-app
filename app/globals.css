@@ -482,6 +482,8 @@ html,body{
 }
 .social-kakao{ background:#FEE500; border-color:#FEE500; }
 .social-apple{ background:#111; color:#fff; border-color:#111; }
+.social-icon{ display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0; }
+.social-icon svg{ width:100%; height:100%; display:block; }
 .login-divider{ display:flex; align-items:center; gap:10px; margin:6px 0 18px; color: var(--ink-faint); font-size:11.5px; }
 .login-divider::before, .login-divider::after{ content:''; flex:1; height:1px; background: var(--line); }
 .login-fields{ display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }

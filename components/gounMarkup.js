@@ -33,8 +33,8 @@ export const GOUN_MARKUP = `
 
       <div class="login-social">
         <button class="social-btn social-kakao" id="social-kakao-btn"><i data-icon="message-circle"></i> 카카오로 계속하기</button>
-        <button class="social-btn social-apple" id="social-apple-btn"><i data-icon="user"></i> Apple로 계속하기</button>
-        <button class="social-btn social-google" id="social-google-btn"><i data-icon="mail"></i> Google로 계속하기</button>
+        <button class="social-btn social-apple" id="social-apple-btn"><span class="social-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zm3.594-3.267c.837-1.013 1.404-2.42 1.247-3.83-1.209.052-2.67.805-3.532 1.818-.78.896-1.464 2.336-1.28 3.714 1.339.104 2.715-.688 3.565-1.702z"/></svg></span> Apple로 계속하기</button>
+        <button class="social-btn social-google" id="social-google-btn"><span class="social-icon"><svg viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.259h2.908c1.702-1.567 2.684-3.874 2.684-6.617z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg></span> Google로 계속하기</button>
       </div>
 
       <div class="login-divider"><span>또는</span></div>
