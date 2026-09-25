@@ -26,8 +26,7 @@ export const GOUN_MARKUP = `
   <section id="view-login" class="view">
     <div class="login-wrap">
       <div class="login-top">
-        <span class="logo-mark"><span class="logo-glow"></span>고</span>
-        <h2>고운 시작하기</h2>
+        <div class="goun-logo-mask login-logo" aria-label="고운"></div>
         <p class="muted center">가입하고 나에게 맞는 K-뷰티를 찾아보세요</p>
       </div>
 
