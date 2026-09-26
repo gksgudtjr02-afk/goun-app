@@ -10,9 +10,13 @@
 
 크리에이터 영상을 보거나 연예인 사진을 가져오면 → AI가 그 화장에 쓰인 제품/색상을 분석 → 유저가 똑같은 화장법으로 자기 얼굴에 발라봄 → 마음에 들면 제품을 구매. 이 네 단계가 고운의 본질임. 각 단계 상태:
 1. 크리에이터 영상 피드 — ✅ 있음 (단, 실제 영상 재생 기능은 없고 플레이어는 목업 상태)
-2. **AI가 사진 속 화장 제품/색상 분석** — ✅ 새로 만듦 (`components/gounMarkup.js`의 `view-lookfinder`, `components/gounAppLogic.js`의 `analyzeLookColors` 호출부, `components/virtualTryOn.js`의 `analyzeLookColors` 함수). 정확한 실제 제품을 맞히는 건 불가능해서, 사진에서 입술/눈/볼 색을 읽어(MediaPipe로 색 "적용"이 아니라 "읽기") 우리 제품 카탈로그에서 색상 거리가 가장 가까운 제품을 추천하는 현실적 방식으로 구현함. 뷰티랩 화면에서 "📸 사진 속 화장, 비슷한 제품 찾기" 버튼으로 진입.
+2. **AI가 사진 속 화장 제품/색상 분석 + 내 얼굴에 비교** — ✅ 새로 만듦, 뷰티랩과 분리된 별도 기능임 (`components/gounMarkup.js`의 `view-lookfinder`, `components/gounAppLogic.js`의 lookfinder 섹션, `components/virtualTryOn.js`의 `analyzeLookColors`/`applyDetectedLook` 함수). 정확한 실제 제품을 맞히는 건 불가능해서, 사진에서 입술/눈/볼 색을 읽어(MediaPipe로 색 "적용"이 아니라 "읽기") 우리 제품 카탈로그에서 색상 거리가 가장 가까운 제품을 추천하는 현실적 방식으로 구현함. 2단계 플로우: ① 연예인 사진 업로드 → 색 분석, ② 내 사진 업로드 → 분석된 색을 내 얼굴에 입혀서(`applyDetectedLook`) 연예인 사진과 나란히 비교(리터치체크 화면의 `.compare-row`/`.compare-card` 레이아웃 재사용) + 매칭 제품 리스트 + 공유 버튼. 홈 화면 2x2 그리드의 "연예인 화장법 배우기" 타일(`data-nav="lookfinder"`, 이전엔 화장 배틀 타일이 있던 자리)로 진입. 뷰티랩은 순수하게 "내가 사고 싶은 화장품 발라보기"용으로만 유지하고, 이 기능은 넣지 않기로 확정함 (SNS 공유/홍보 목적이 뷰티랩의 쇼핑 목적과 다르다는 사용자 판단).
 3. 발라보기(AR) — ⏸ 숨김 처리됨 (위 항목 참고, Perfect Corp API 전환 대기)
 4. 구매 — ⚠ 부분적 (쿠팡 문구로 통일했지만 실제 결제/커미션 연동은 사업자등록 이후)
+
+## 화장 배틀 — 홈 화면 진입점 제거됨 (코드는 남아있음)
+
+홈 화면 2x2 그리드의 "화장 배틀" 타일을 "연예인 화장법 배우기"(lookfinder)로 교체함. `view-battle` 섹션과 관련 로직은 전부 코드에 남아있고 완전히 삭제하지 않았음 — 다만 현재 UI 어디에서도 `data-nav="battle"`로 연결되는 곳이 없어서 사실상 도달 불가능한 상태임 (발라보기 AR과 같은 패턴: 기능은 숨김, 코드는 보존). 다시 노출하려면 `components/gounMarkup.js`의 홈 그리드 타일 중 하나를 `data-nav="battle"`로 바꾸면 됨.
 
 ## 향후 아이디어 / TODO
 

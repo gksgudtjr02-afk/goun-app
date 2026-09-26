@@ -1,4 +1,4 @@
-import { startCameraPreview, stopStream, capturePhotoWithMakeup, analyzeLookColors } from './virtualTryOn';
+import { startCameraPreview, stopStream, capturePhotoWithMakeup, analyzeLookColors, applyDetectedLook } from './virtualTryOn';
 
 /* ---------- Icon system: inline SVG, no external font dependency ---------- */
 const ICONS = {
@@ -1215,50 +1215,93 @@ export function initGounApp(root, supabase) {
     `;
   }
 
-  function resetLookfinder() {
-    document.getElementById('lookfinder-upload')?.classList.remove('hidden');
-    document.getElementById('lookfinder-loading')?.classList.add('hidden');
-    document.getElementById('lookfinder-result')?.classList.add('hidden');
-    const fileInput = document.getElementById('lookfinder-file-input');
-    if (fileInput) fileInput.value = '';
+  let lookfinderColors = null;
+  let lookfinderRefUrl = null;
+
+  function showLookfinderStep(step) {
+    document.getElementById('lookfinder-step1')?.classList.toggle('hidden', step !== 'step1');
+    document.getElementById('lookfinder-step2')?.classList.toggle('hidden', step !== 'step2');
+    document.getElementById('lookfinder-loading')?.classList.toggle('hidden', step !== 'loading');
+    document.getElementById('lookfinder-result')?.classList.toggle('hidden', step !== 'result');
   }
 
-  document.getElementById('lookfinder-file-input')?.addEventListener('change', function () {
+  function resetLookfinder() {
+    lookfinderColors = null;
+    lookfinderRefUrl = null;
+    showLookfinderStep('step1');
+    const refInput = document.getElementById('lookfinder-ref-input');
+    const selfieInput = document.getElementById('lookfinder-selfie-input');
+    if (refInput) refInput.value = '';
+    if (selfieInput) selfieInput.value = '';
+  }
+
+  function loadImage(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  document.getElementById('lookfinder-ref-input')?.addEventListener('change', async function () {
     const file = this.files?.[0];
     if (!file) return;
 
-    document.getElementById('lookfinder-upload')?.classList.add('hidden');
-    document.getElementById('lookfinder-loading')?.classList.remove('hidden');
+    showLookfinderStep('loading');
+    document.getElementById('lookfinder-loading-text').textContent = '사진 속 화장 색을 분석하고 있어요...';
 
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = async () => {
-      try {
-        const colors = await analyzeLookColors(img);
-        document.getElementById('lookfinder-loading')?.classList.add('hidden');
-        if (!colors.faceFound) {
-          showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
-          resetLookfinder();
-          return;
-        }
-        const previewImg = document.getElementById('lookfinder-preview-img');
-        if (previewImg) previewImg.src = url;
-        const matches = document.getElementById('lookfinder-matches');
-        if (matches) {
-          matches.innerHTML = ['lip', 'eye', 'blush'].map(type => renderLookfinderMatch(type, colors[type])).join('');
-        }
-        document.getElementById('lookfinder-result')?.classList.remove('hidden');
-      } catch (err) {
-        console.error('[lookfinder] analyze-error', err);
-        showToast('분석에 실패했어요. 다시 시도해주세요');
+    try {
+      const url = URL.createObjectURL(file);
+      const img = await loadImage(url);
+      const colors = await analyzeLookColors(img);
+      if (!colors.faceFound) {
+        showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
         resetLookfinder();
+        return;
       }
-    };
-    img.onerror = () => {
-      showToast('사진을 불러오지 못했어요');
+      lookfinderColors = colors;
+      lookfinderRefUrl = url;
+      showLookfinderStep('step2');
+    } catch (err) {
+      console.error('[lookfinder] analyze-error', err);
+      showToast('분석에 실패했어요. 다시 시도해주세요');
       resetLookfinder();
-    };
-    img.src = url;
+    }
+  });
+
+  document.getElementById('lookfinder-selfie-input')?.addEventListener('change', async function () {
+    const file = this.files?.[0];
+    if (!file || !lookfinderColors) return;
+
+    showLookfinderStep('loading');
+    document.getElementById('lookfinder-loading-text').textContent = '내 얼굴에 화장을 입히고 있어요...';
+
+    try {
+      const url = URL.createObjectURL(file);
+      const img = await loadImage(url);
+      const { canvas, faceFound } = await applyDetectedLook(img, lookfinderColors);
+      if (!faceFound) {
+        showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
+        showLookfinderStep('step2');
+        return;
+      }
+      document.getElementById('lookfinder-ref-img').src = lookfinderRefUrl;
+      document.getElementById('lookfinder-selfie-img').src = canvas.toDataURL('image/jpeg', 0.92);
+      const matches = document.getElementById('lookfinder-matches');
+      if (matches) {
+        matches.innerHTML = ['lip', 'eye', 'blush'].map(type => renderLookfinderMatch(type, lookfinderColors[type])).join('');
+      }
+      showLookfinderStep('result');
+    } catch (err) {
+      console.error('[lookfinder] apply-error', err);
+      showToast('적용에 실패했어요. 다시 시도해주세요');
+      showLookfinderStep('step2');
+    }
+  });
+
+  document.getElementById('lookfinder-share-btn')?.addEventListener('click', () => {
+    shareContent('고운에서 연예인 화장법 따라해봤어요', '나도 이 룩 따라할 수 있을까? 고운에서 비슷한 제품도 바로 찾아줘요 ✨ #고운 #GOUN');
   });
 
   document.getElementById('lookfinder-retry-btn')?.addEventListener('click', resetLookfinder);

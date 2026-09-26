@@ -90,10 +90,10 @@ export const GOUN_MARKUP = `
         <strong>퍼스널 컬러 진단</strong>
         <span>내 웜톤/쿨톤 찾기</span>
       </button>
-      <button class="mini-banner mini-banner-battle" data-nav="battle">
-        <i data-icon="swords"></i>
-        <strong>화장 배틀</strong>
-        <span>내 vs 친구 투표</span>
+      <button class="mini-banner mini-banner-celeb" data-nav="lookfinder">
+        <i data-icon="camera"></i>
+        <strong>연예인 화장법 배우기</strong>
+        <span>사진으로 비슷한 제품 찾기</span>
       </button>
       <button class="mini-banner mini-banner-scan" data-nav="scanner">
         <i data-icon="scan"></i>
@@ -418,11 +418,6 @@ export const GOUN_MARKUP = `
         <div class="look-preset-row" id="look-preset-row"></div>
       </div>
 
-      <button class="advertiser-link" data-nav="lookfinder" style="margin-bottom:18px;">
-        <span>📸 사진 속 화장, 비슷한 제품 찾기</span>
-        <span class="advertiser-link-cta">시작하기 <i data-icon="chevron-right"></i></span>
-      </button>
-
       <div class="search-box">
         <i data-icon="search"></i>
         <input class="search-input" id="lab-search" placeholder="제품명으로 검색 (예: 쿠션, 틴트, 세럼)">
@@ -449,28 +444,50 @@ export const GOUN_MARKUP = `
   <!-- ===================== 4b. LOOK FINDER (color match from a photo) ===================== -->
   <section id="view-lookfinder" class="view">
     <header class="sub-header">
-      <button class="icon-btn" data-nav="lab"><i data-icon="chevron-left"></i></button>
-      <span>사진으로 제품 찾기</span>
+      <button class="icon-btn" data-nav="home"><i data-icon="chevron-left"></i></button>
+      <span>연예인 화장법 따라하기</span>
       <span class="spacer"></span>
     </header>
 
     <div class="scroll-pad">
-      <div id="lookfinder-upload">
-        <p class="muted" style="margin-bottom:16px;">화장이 잘 보이는 사진을 올려주세요 — 내 사진도, 마음에 든 연예인 사진도 괜찮아요.</p>
-        <label class="btn-primary btn-block" for="lookfinder-file-input" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-          <i data-icon="camera"></i> 사진 선택하기
+      <div id="lookfinder-step1">
+        <p class="muted" style="margin-bottom:16px;">따라하고 싶은 연예인 사진을 올려주세요. 화장이 잘 보이는 사진일수록 정확해요.</p>
+        <label class="btn-primary btn-block" for="lookfinder-ref-input" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <i data-icon="camera"></i> 연예인 사진 선택하기
         </label>
-        <input type="file" accept="image/*" id="lookfinder-file-input" class="hidden">
+        <input type="file" accept="image/*" id="lookfinder-ref-input" class="hidden">
+      </div>
+
+      <div id="lookfinder-step2" class="hidden">
+        <p class="muted" style="margin-bottom:16px;">좋아요! 이제 내 사진을 올리면, 이 화장을 내 얼굴에 입혀서 비교해드려요.</p>
+        <label class="btn-primary btn-block" for="lookfinder-selfie-input" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <i data-icon="camera"></i> 내 사진 선택하기
+        </label>
+        <input type="file" accept="image/*" capture="user" id="lookfinder-selfie-input" class="hidden">
       </div>
 
       <div id="lookfinder-loading" class="hidden center" style="padding:60px 0;">
-        <p class="muted">사진 속 화장 색을 분석하고 있어요...</p>
+        <p class="muted" id="lookfinder-loading-text">사진 속 화장 색을 분석하고 있어요...</p>
       </div>
 
       <div id="lookfinder-result" class="hidden">
-        <img id="lookfinder-preview-img" style="width:100%;border-radius:14px;margin:0 0 18px;display:block;" alt="선택한 사진">
+        <div class="compare-row">
+          <div class="compare-card">
+            <span class="compare-label"><i data-icon="star"></i> 연예인 사진</span>
+            <img id="lookfinder-ref-img" class="thumb" style="width:100%;height:100%;object-fit:cover;" alt="연예인 사진">
+          </div>
+          <div class="compare-card">
+            <span class="compare-label"><i data-icon="user"></i> 내 화장 결과</span>
+            <img id="lookfinder-selfie-img" class="thumb" style="width:100%;height:100%;object-fit:cover;" alt="내 화장 결과">
+          </div>
+        </div>
+
         <div id="lookfinder-matches"></div>
-        <button class="btn-outline btn-block" id="lookfinder-retry-btn" style="margin-top:16px;">다른 사진으로 다시 하기</button>
+
+        <button class="btn-primary btn-block" id="lookfinder-share-btn" style="margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <i data-icon="share"></i> 결과 공유하기
+        </button>
+        <button class="btn-outline btn-block" id="lookfinder-retry-btn" style="margin-top:8px;">처음부터 다시 하기</button>
       </div>
     </div>
   </section>

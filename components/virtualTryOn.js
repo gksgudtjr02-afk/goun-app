@@ -318,3 +318,29 @@ export async function analyzeLookColors(imageEl) {
 
   return { faceFound: true, lip: lipColor, eye: eyeColor, blush: blushColor };
 }
+
+/**
+ * Draws the given lip/eye/blush hex colors (usually the output of
+ * analyzeLookColors on a reference photo) onto a *different* photo — used to
+ * show "here's that look on you" next to the original reference image.
+ * Returns a canvas with the result; callers turn it into an <img> src themselves.
+ */
+export async function applyDetectedLook(imageEl, colors) {
+  const w = imageEl.naturalWidth || imageEl.width;
+  const h = imageEl.naturalHeight || imageEl.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(imageEl, 0, 0, w, h);
+
+  const landmarker = await getFaceLandmarker();
+  const result = landmarker.detect(canvas);
+  const face = result?.faceLandmarks?.[0];
+  if (!face) return { canvas, faceFound: false };
+
+  if (colors.lip) drawLips(ctx, face, w, h, colors.lip);
+  if (colors.eye) drawEyeshadow(ctx, face, w, h, colors.eye);
+  if (colors.blush) drawBlush(ctx, face, w, h, colors.blush);
+  return { canvas, faceFound: true };
+}
