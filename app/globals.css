@@ -572,7 +572,7 @@ html,body{
 .weather-strip .chev{ color:#7FA8DB; font-size:12px; }
 
 /* ---------- Scrollable mini banners ---------- */
-.quad-banner-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin: 0 20px 18px; }
+.quad-banner-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin: 0 20px 18px; }
 .quad-banner-grid .mini-banner{ padding:13px 12px; }
 .quad-banner-grid .mini-banner [data-icon]{ font-size:16px; margin-bottom:2px; }
 .quad-banner-grid .mini-banner strong{ font-size:12px; }

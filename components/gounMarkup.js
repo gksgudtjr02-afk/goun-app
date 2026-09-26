@@ -85,7 +85,7 @@ export const GOUN_MARKUP = `
     </button>
 
     <div class="quad-banner-grid">
-      <button class="mini-banner mini-banner-color" data-nav="color">
+      <button class="mini-banner mini-banner-color hidden" data-nav="color">
         <i data-icon="palette"></i>
         <strong>퍼스널 컬러 진단</strong>
         <span>내 웜톤/쿨톤 찾기</span>
