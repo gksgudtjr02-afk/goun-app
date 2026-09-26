@@ -73,13 +73,11 @@ function drawLips(ctx, landmarks, w, h, color) {
   const width = Math.hypot(lCorner.x - rCorner.x, lCorner.y - rCorner.y);
   const blurPx = Math.min(6, Math.max(1.5, width * 0.05));
 
-  // Base tint. Non-separable blend modes ('color'/'multiply') combined with a
-  // canvas filter render inconsistently on some mobile GPUs (near-invisible on
-  // several Android devices), so this stays on plain alpha compositing, which
-  // is universally supported.
+  // Base tint. 'color' blend keeps the lips' own shading/highlights and only
+  // swaps the hue, so it reads as makeup rather than a flat paint fill.
   ctx.save();
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.globalAlpha = 0.62;
+  ctx.globalCompositeOperation = 'color';
+  ctx.globalAlpha = 0.85;
   ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = color;
   ctx.fill(combined, 'evenodd');
@@ -109,22 +107,23 @@ function drawEyeshadowSide(ctx, landmarks, w, h, color, upperIndices) {
   const first = upperPts[0];
   const last = upperPts[upperPts.length - 1];
   const eyeWidth = Math.hypot(last.x - first.x, last.y - first.y);
-  const lift = Math.max(8, eyeWidth * 0.42);
+  const lift = Math.max(10, eyeWidth * 0.5);
   const path = new Path2D();
   upperPts.forEach((p, i) => (i === 0 ? path.moveTo(p.x, p.y) : path.lineTo(p.x, p.y)));
   for (let i = upperPts.length - 1; i >= 0; i--) path.lineTo(upperPts[i].x, upperPts[i].y - lift);
   path.closePath();
 
-  // Darker near the lash line, fading out toward the brow, instead of a flat block of color.
+  // Solid near the lash line, fading out toward the brow, instead of a flat block of color.
   const mid = upperPts[Math.floor(upperPts.length / 2)];
   const gradient = ctx.createLinearGradient(mid.x, mid.y, mid.x, mid.y - lift);
   gradient.addColorStop(0, color);
+  gradient.addColorStop(0.55, color);
   gradient.addColorStop(1, 'rgba(255,255,255,0)');
   const blurPx = Math.min(5, Math.max(1.5, eyeWidth * 0.06));
 
   ctx.save();
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.globalAlpha = 0.55;
+  ctx.globalCompositeOperation = 'color';
+  ctx.globalAlpha = 0.8;
   ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = gradient;
   ctx.fill(path);
@@ -145,11 +144,12 @@ function drawBlushSide(ctx, landmarks, w, h, color, eyeCornerIdx, mouthCornerIdx
   const radius = Math.hypot(mouthP.x - eyeP.x, mouthP.y - eyeP.y) * 0.32;
   const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
   gradient.addColorStop(0, color);
+  gradient.addColorStop(0.6, color);
   gradient.addColorStop(1, 'rgba(255,255,255,0)');
   const blurPx = Math.min(8, Math.max(2, radius * 0.15));
   ctx.save();
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.globalAlpha = 0.4;
+  ctx.globalCompositeOperation = 'color';
+  ctx.globalAlpha = 0.7;
   ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = gradient;
   ctx.beginPath();
