@@ -398,6 +398,30 @@ html,body{
 }
 .modal-backdrop.show{ display:flex; }
 .modal-card{ background:#fff; border-radius: var(--radius-lg); padding:26px 22px; max-width:320px; width:100%; text-align:center; }
+
+.tryon-backdrop{ background:#000; padding:0; z-index:70; }
+.tryon-stage{ position:relative; width:100%; height:100%; max-width:430px; margin:0 auto; overflow:hidden; background:#000; }
+.tryon-video, .tryon-canvas{
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  object-fit:cover; transform: scaleX(-1);
+}
+.tryon-canvas{ pointer-events:none; }
+.tryon-top{
+  position:absolute; top:0; left:0; right:0; z-index:2;
+  display:flex; align-items:center; justify-content:space-between;
+  padding: max(16px, env(safe-area-inset-top)) 16px 0;
+}
+.tryon-product-pill{ background:rgba(0,0,0,.45); color:#fff; font-size:12.5px; font-weight:700; padding:8px 14px; border-radius: var(--radius-pill); }
+.tryon-close-btn{
+  width:36px; height:36px; border-radius:999px; border:none; background:rgba(0,0,0,.45); color:#fff;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.tryon-status{
+  position:absolute; left:0; right:0; bottom: max(28px, env(safe-area-inset-bottom)); z-index:2;
+  text-align:center; color:#fff; font-size:13px; font-weight:600; text-shadow:0 1px 4px rgba(0,0,0,.6);
+  padding: 0 24px;
+}
+.tryon-status.error{ color:#FFB4B4; }
 .modal-lock{ width:52px; height:52px; border-radius:50%; background:#FFF4DE; color:#B9781A; display:flex; align-items:center; justify-content:center; font-size:22px; margin:0 auto 14px; }
 .modal-card h3{ font-size:16.5px; margin:0 0 8px; }
 .modal-compare{ display:flex; justify-content:space-around; align-items:center; background: var(--surface-sunken); border-radius: var(--radius-md); padding:12px; margin:16px 0; }

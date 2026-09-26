@@ -641,6 +641,19 @@ export const GOUN_MARKUP = `
     </div>
   </div>
 
+  <!-- ===================== VIRTUAL TRY-ON (CAMERA AR) ===================== -->
+  <div id="tryon-modal" class="modal-backdrop tryon-backdrop">
+    <div class="tryon-stage">
+      <video id="tryon-video" class="tryon-video" playsinline muted autoplay></video>
+      <canvas id="tryon-canvas" class="tryon-canvas"></canvas>
+      <div class="tryon-top">
+        <span class="tryon-product-pill" id="tryon-product-pill">제품</span>
+        <button class="tryon-close-btn" id="tryon-close-btn" aria-label="닫기"><i data-icon="x"></i></button>
+      </div>
+      <div class="tryon-status" id="tryon-status">카메라를 준비하고 있어요...</div>
+    </div>
+  </div>
+
   <!-- ===================== SUBSCRIBE SUCCESS TOAST ===================== -->
   <div id="toast" class="toast"><i data-icon="check"></i><span id="toast-text">완료되었어요</span></div>
 

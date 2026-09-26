@@ -1,3 +1,5 @@
+import { startVirtualTryOn } from './virtualTryOn';
+
 /* ---------- Icon system: inline SVG, no external font dependency ---------- */
 const ICONS = {
   'map-pin':'<path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>',
@@ -246,6 +248,58 @@ export function initGounApp(root, supabase) {
 
   /* ---------- Virtual Lab: product search & select ---------- */
   let selectedProduct = null;
+  let stopTryOn = null;
+
+  const TRYON_STATUS_TEXT = {
+    camera: '카메라 권한을 확인하고 있어요...',
+    model: 'AI 모델을 불러오는 중이에요...',
+    searching: '얼굴을 화면 중앙에 맞춰주세요',
+    running: '',
+    'no-face': '얼굴이 잘 안 보여요. 화면 중앙을 봐주세요',
+    error: '카메라를 사용할 수 없어요. 권한을 확인해주세요',
+  };
+
+  async function closeTryOn() {
+    document.getElementById('tryon-modal')?.classList.remove('show');
+    if (stopTryOn) {
+      const stop = stopTryOn;
+      stopTryOn = null;
+      await stop();
+    }
+  }
+
+  async function openTryOn(product) {
+    const modal = document.getElementById('tryon-modal');
+    const video = document.getElementById('tryon-video');
+    const canvas = document.getElementById('tryon-canvas');
+    const statusEl = document.getElementById('tryon-status');
+    const pill = document.getElementById('tryon-product-pill');
+    if (!modal || !video || !canvas) return;
+
+    pill.textContent = `${product.brand} · ${product.name}`;
+    statusEl.textContent = TRYON_STATUS_TEXT.camera;
+    statusEl.classList.remove('error');
+    modal.classList.add('show');
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      statusEl.textContent = '이 브라우저는 카메라를 지원하지 않아요';
+      statusEl.classList.add('error');
+      return;
+    }
+
+    stopTryOn = await startVirtualTryOn({
+      video,
+      canvas,
+      product,
+      onStatus: (status) => {
+        if (!document.getElementById('tryon-modal')?.classList.contains('show')) return;
+        statusEl.textContent = TRYON_STATUS_TEXT[status] ?? '';
+        statusEl.classList.toggle('error', status === 'error');
+      },
+    });
+  }
+
+  document.getElementById('tryon-close-btn')?.addEventListener('click', closeTryOn);
 
   async function loadProducts() {
     const { data, error } = await supabase
@@ -321,7 +375,7 @@ export function initGounApp(root, supabase) {
   });
   document.getElementById('try-selected-btn')?.addEventListener('click', () => {
     if (!selectedProduct) { showToast('먼저 제품을 선택해주세요'); return; }
-    showToast(`${selectedProduct.name} 가상 체험 완료!`);
+    openTryOn(selectedProduct);
   });
   document.getElementById('buy-selected-btn')?.addEventListener('click', () => {
     showToast(`올리브영에서 ${selectedProduct.name} 구매 페이지로 이동해요`);
@@ -867,5 +921,6 @@ export function initGounApp(root, supabase) {
     authListenerActive = false;
     clearInterval(flagInterval);
     authSubscription?.subscription?.unsubscribe();
+    if (stopTryOn) stopTryOn();
   };
 }
