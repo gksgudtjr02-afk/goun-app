@@ -1,4 +1,4 @@
-/* ---------- Virtual makeup try-on: MediaPipe face landmarks + canvas overlay ---------- */
+/* ---------- Virtual makeup try-on: capture a photo, apply makeup once (higher quality than live video) ---------- */
 
 // Exact outer/inner lip contours from MediaPipe's FACEMESH_LIPS connection set,
 // walked as a single closed loop rather than the raw (unordered) connection pairs.
@@ -25,11 +25,13 @@ async function createLandmarker(filesetResolver, delegate) {
   const { FaceLandmarker } = await import('@mediapipe/tasks-vision');
   return FaceLandmarker.createFromOptions(filesetResolver, {
     baseOptions: { modelAssetPath: MODEL_URL, delegate },
-    runningMode: 'VIDEO',
+    runningMode: 'IMAGE',
     numFaces: 1,
   });
 }
 
+// Single shared IMAGE-mode landmarker: one photo, processed once, so we can
+// afford a more careful detection pass than a 30fps live-video loop would.
 async function getFaceLandmarker() {
   if (!landmarkerPromise) {
     landmarkerPromise = (async () => {
@@ -45,22 +47,15 @@ async function getFaceLandmarker() {
   return landmarkerPromise;
 }
 
-// object-fit:cover maps the raw video frame onto the canvas; this mirrors that
-// mapping so drawn points land exactly where the visible (cropped) video is.
-function coverTransform(videoW, videoH, canvasW, canvasH) {
-  const scale = Math.max(canvasW / videoW, canvasH / videoH);
-  return { scale, offsetX: (canvasW - videoW * scale) / 2, offsetY: (canvasH - videoH * scale) / 2 };
-}
-
-function toPoint(landmarks, idx, t) {
+function toPoint(landmarks, idx, w, h) {
   const p = landmarks[idx];
-  return { x: t.offsetX + p.x * t.videoW * t.scale, y: t.offsetY + p.y * t.videoH * t.scale };
+  return { x: p.x * w, y: p.y * h };
 }
 
-function pathFromIndices(landmarks, indices, t) {
+function pathFromIndices(landmarks, indices, w, h) {
   const path = new Path2D();
   indices.forEach((idx, i) => {
-    const { x, y } = toPoint(landmarks, idx, t);
+    const { x, y } = toPoint(landmarks, idx, w, h);
     if (i === 0) path.moveTo(x, y);
     else path.lineTo(x, y);
   });
@@ -68,13 +63,13 @@ function pathFromIndices(landmarks, indices, t) {
   return path;
 }
 
-function drawLips(ctx, landmarks, t, color) {
+function drawLips(ctx, landmarks, w, h, color) {
   const combined = new Path2D();
-  combined.addPath(pathFromIndices(landmarks, LIPS_OUTER, t));
-  combined.addPath(pathFromIndices(landmarks, LIPS_INNER, t));
+  combined.addPath(pathFromIndices(landmarks, LIPS_OUTER, w, h));
+  combined.addPath(pathFromIndices(landmarks, LIPS_INNER, w, h));
 
-  const rCorner = toPoint(landmarks, MOUTH_CORNER_R, t);
-  const lCorner = toPoint(landmarks, MOUTH_CORNER_L, t);
+  const rCorner = toPoint(landmarks, MOUTH_CORNER_R, w, h);
+  const lCorner = toPoint(landmarks, MOUTH_CORNER_L, w, h);
   const width = Math.hypot(lCorner.x - rCorner.x, lCorner.y - rCorner.y);
   const blurPx = Math.min(6, Math.max(1.5, width * 0.05));
 
@@ -89,7 +84,7 @@ function drawLips(ctx, landmarks, t, color) {
   ctx.restore();
 
   // Gloss highlight on the lower lip, like a tint/gloss product catching light.
-  const lowerCenter = toPoint(landmarks, 14, t);
+  const lowerCenter = toPoint(landmarks, 14, w, h);
   const glossR = Math.max(width * 0.09, 3);
   const gloss = ctx.createRadialGradient(lowerCenter.x, lowerCenter.y, 0, lowerCenter.x, lowerCenter.y, glossR);
   gloss.addColorStop(0, 'rgba(255,255,255,0.85)');
@@ -106,8 +101,8 @@ function drawLips(ctx, landmarks, t, color) {
   ctx.restore();
 }
 
-function drawEyeshadowSide(ctx, landmarks, t, color, upperIndices) {
-  const upperPts = upperIndices.map((idx) => toPoint(landmarks, idx, t));
+function drawEyeshadowSide(ctx, landmarks, w, h, color, upperIndices) {
+  const upperPts = upperIndices.map((idx) => toPoint(landmarks, idx, w, h));
   const first = upperPts[0];
   const last = upperPts[upperPts.length - 1];
   const eyeWidth = Math.hypot(last.x - first.x, last.y - first.y);
@@ -134,14 +129,14 @@ function drawEyeshadowSide(ctx, landmarks, t, color, upperIndices) {
   ctx.restore();
 }
 
-function drawEyeshadow(ctx, landmarks, t, color) {
-  drawEyeshadowSide(ctx, landmarks, t, color, EYE_RIGHT_UPPER);
-  drawEyeshadowSide(ctx, landmarks, t, color, EYE_LEFT_UPPER);
+function drawEyeshadow(ctx, landmarks, w, h, color) {
+  drawEyeshadowSide(ctx, landmarks, w, h, color, EYE_RIGHT_UPPER);
+  drawEyeshadowSide(ctx, landmarks, w, h, color, EYE_LEFT_UPPER);
 }
 
-function drawBlushSide(ctx, landmarks, t, color, eyeCornerIdx, mouthCornerIdx, dir) {
-  const eyeP = toPoint(landmarks, eyeCornerIdx, t);
-  const mouthP = toPoint(landmarks, mouthCornerIdx, t);
+function drawBlushSide(ctx, landmarks, w, h, color, eyeCornerIdx, mouthCornerIdx, dir) {
+  const eyeP = toPoint(landmarks, eyeCornerIdx, w, h);
+  const mouthP = toPoint(landmarks, mouthCornerIdx, w, h);
   const cx = (eyeP.x + mouthP.x) / 2 + dir * Math.abs(eyeP.x - mouthP.x) * 0.12;
   const cy = (eyeP.y + mouthP.y) / 2 - Math.abs(eyeP.y - mouthP.y) * 0.05;
   const radius = Math.hypot(mouthP.x - eyeP.x, mouthP.y - eyeP.y) * 0.32;
@@ -161,124 +156,80 @@ function drawBlushSide(ctx, landmarks, t, color, eyeCornerIdx, mouthCornerIdx, d
   ctx.restore();
 }
 
-function drawBlush(ctx, landmarks, t, color) {
-  drawBlushSide(ctx, landmarks, t, color, EYE_OUTER_R, MOUTH_CORNER_R, -1);
-  drawBlushSide(ctx, landmarks, t, color, EYE_OUTER_L, MOUTH_CORNER_L, 1);
+function drawBlush(ctx, landmarks, w, h, color) {
+  drawBlushSide(ctx, landmarks, w, h, color, EYE_OUTER_R, MOUTH_CORNER_R, -1);
+  drawBlushSide(ctx, landmarks, w, h, color, EYE_OUTER_L, MOUTH_CORNER_L, 1);
 }
 
-function drawBase(ctx, canvasCssW, canvasCssH, color) {
+function drawBase(ctx, w, h, color) {
   ctx.save();
   ctx.globalCompositeOperation = 'soft-light';
   ctx.globalAlpha = 0.18;
   ctx.fillStyle = color;
-  ctx.fillRect(0, 0, canvasCssW, canvasCssH);
+  ctx.fillRect(0, 0, w, h);
   ctx.restore();
 }
 
-function drawForProduct(ctx, landmarks, t, canvasCssW, canvasCssH, product) {
+function drawForProduct(ctx, landmarks, w, h, product) {
   const color = product?.color || '#FF4D6D';
   switch (product?.type) {
     case 'lip':
-      drawLips(ctx, landmarks, t, color);
+      drawLips(ctx, landmarks, w, h, color);
       break;
     case 'eye':
-      drawEyeshadow(ctx, landmarks, t, color);
+      drawEyeshadow(ctx, landmarks, w, h, color);
       break;
     case 'blush':
-      drawBlush(ctx, landmarks, t, color);
+      drawBlush(ctx, landmarks, w, h, color);
       break;
     case 'base':
     case 'skin':
     default:
-      drawBase(ctx, canvasCssW, canvasCssH, color);
+      drawBase(ctx, w, h, color);
       break;
   }
 }
 
-/**
- * Starts the camera + live AR overlay. Returns an async stop() function.
- * onStatus receives 'camera' | 'model' | 'running' | 'no-face' | 'error'.
- */
-export async function startVirtualTryOn({ video, canvas, product, onStatus }) {
-  let stopped = false;
-  let stream = null;
-  let rafId = null;
-
-  try {
-    onStatus?.('camera');
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: 'user',
-        width: { ideal: 1080, min: 720 },
-        height: { ideal: 1920, min: 1280 },
-        frameRate: { ideal: 30 },
-      },
-      audio: false,
-    });
-  } catch (err) {
-    onStatus?.('camera-error', err);
-    return async () => {};
-  }
-
-  if (stopped) {
-    stream.getTracks().forEach((tr) => tr.stop());
-    return async () => {};
-  }
-
+/** Opens the front camera and attaches it to the given <video>. Returns the MediaStream. */
+export async function startCameraPreview(video) {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: 'user',
+      width: { ideal: 1080, min: 720 },
+      height: { ideal: 1920, min: 1280 },
+    },
+    audio: false,
+  });
   video.srcObject = stream;
   await video.play().catch(() => {});
+  return stream;
+}
 
-  onStatus?.('model');
-  let landmarker;
-  try {
-    landmarker = await getFaceLandmarker();
-  } catch (err) {
-    stream.getTracks().forEach((tr) => tr.stop());
-    onStatus?.('model-error', err);
-    return async () => {};
-  }
+export function stopStream(stream) {
+  stream?.getTracks().forEach((tr) => tr.stop());
+}
 
-  if (stopped) {
-    stream.getTracks().forEach((tr) => tr.stop());
-    return async () => {};
-  }
-
+/**
+ * Captures the current video frame (mirrored, to match what the user saw while framing
+ * the shot), runs face-landmark detection once on that still photo, and draws the
+ * selected product's makeup onto it.
+ * Returns { canvas, faceFound }.
+ */
+export async function capturePhotoWithMakeup(video, product) {
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
   const ctx = canvas.getContext('2d');
-  onStatus?.('searching');
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-  function loop() {
-    if (stopped) return;
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    const cssW = rect.width || 1;
-    const cssH = rect.height || 1;
-    const pxW = Math.round(cssW * dpr);
-    const pxH = Math.round(cssH * dpr);
-    if (canvas.width !== pxW || canvas.height !== pxH) {
-      canvas.width = pxW;
-      canvas.height = pxH;
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, cssW, cssH);
-
-    if (video.videoWidth && video.videoHeight) {
-      const result = landmarker.detectForVideo(video, performance.now());
-      const face = result?.faceLandmarks?.[0];
-      if (face) {
-        onStatus?.('running');
-        const t = { ...coverTransform(video.videoWidth, video.videoHeight, cssW, cssH), videoW: video.videoWidth, videoH: video.videoHeight };
-        drawForProduct(ctx, face, t, cssW, cssH, product);
-      } else {
-        onStatus?.('no-face');
-      }
-    }
-    rafId = requestAnimationFrame(loop);
+  const landmarker = await getFaceLandmarker();
+  const result = landmarker.detect(canvas);
+  const face = result?.faceLandmarks?.[0];
+  if (face) {
+    drawForProduct(ctx, face, canvas.width, canvas.height, product);
   }
-  rafId = requestAnimationFrame(loop);
-
-  return async function stop() {
-    stopped = true;
-    if (rafId) cancelAnimationFrame(rafId);
-    if (stream) stream.getTracks().forEach((tr) => tr.stop());
-  };
+  return { canvas, faceFound: !!face };
 }

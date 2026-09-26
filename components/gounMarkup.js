@@ -651,16 +651,22 @@ export const GOUN_MARKUP = `
     </div>
   </div>
 
-  <!-- ===================== VIRTUAL TRY-ON (CAMERA AR) ===================== -->
+  <!-- ===================== VIRTUAL TRY-ON (PHOTO AR) ===================== -->
   <div id="tryon-modal" class="modal-backdrop tryon-backdrop">
     <div class="tryon-stage">
       <video id="tryon-video" class="tryon-video" playsinline muted autoplay></video>
-      <canvas id="tryon-canvas" class="tryon-canvas"></canvas>
+      <canvas id="tryon-result" class="tryon-result hidden"></canvas>
       <div class="tryon-top">
         <span class="tryon-product-pill" id="tryon-product-pill">제품</span>
         <button class="tryon-close-btn" id="tryon-close-btn" aria-label="닫기"><i data-icon="x"></i></button>
       </div>
       <div class="tryon-status" id="tryon-status">카메라를 준비하고 있어요...</div>
+      <div class="tryon-bottom" id="tryon-shutter-wrap">
+        <button class="tryon-shutter-btn" id="tryon-shutter-btn" aria-label="촬영하기"></button>
+      </div>
+      <div class="tryon-bottom tryon-result-actions hidden" id="tryon-result-actions">
+        <button class="btn-outline btn-block" id="tryon-retake-btn">다시 찍기</button>
+      </div>
     </div>
   </div>
 

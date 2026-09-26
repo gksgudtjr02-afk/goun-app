@@ -1,4 +1,4 @@
-import { startVirtualTryOn } from './virtualTryOn';
+import { startCameraPreview, stopStream, capturePhotoWithMakeup } from './virtualTryOn';
 
 /* ---------- Icon system: inline SVG, no external font dependency ---------- */
 const ICONS = {
@@ -255,38 +255,36 @@ export function initGounApp(root, supabase) {
 
   /* ---------- Virtual Lab: product search & select ---------- */
   let selectedProduct = null;
-  let stopTryOn = null;
+  let tryOnStream = null;
+  let tryOnProduct = null;
 
-  const TRYON_STATUS_TEXT = {
-    camera: '카메라 권한을 확인하고 있어요...',
-    model: 'AI 모델을 불러오는 중이에요...',
-    searching: '얼굴을 화면 중앙에 맞춰주세요',
-    running: '',
-    'no-face': '얼굴이 잘 안 보여요. 화면 중앙을 봐주세요',
-    'camera-error': '카메라를 사용할 수 없어요. 브라우저 설정에서 카메라 권한을 허용해주세요',
-    'model-error': 'AI 모델을 불러오지 못했어요. 인터넷 연결을 확인하고 다시 시도해주세요',
-  };
+  function showTryOnLive() {
+    document.getElementById('tryon-video')?.classList.remove('hidden');
+    document.getElementById('tryon-result')?.classList.add('hidden');
+    document.getElementById('tryon-shutter-wrap')?.classList.remove('hidden');
+    document.getElementById('tryon-result-actions')?.classList.add('hidden');
+  }
 
   async function closeTryOn() {
     document.getElementById('tryon-modal')?.classList.remove('show');
-    if (stopTryOn) {
-      const stop = stopTryOn;
-      stopTryOn = null;
-      await stop();
-    }
+    stopStream(tryOnStream);
+    tryOnStream = null;
+    tryOnProduct = null;
+    showTryOnLive();
   }
 
   async function openTryOn(product) {
     const modal = document.getElementById('tryon-modal');
     const video = document.getElementById('tryon-video');
-    const canvas = document.getElementById('tryon-canvas');
     const statusEl = document.getElementById('tryon-status');
     const pill = document.getElementById('tryon-product-pill');
-    if (!modal || !video || !canvas) return;
+    if (!modal || !video) return;
 
+    tryOnProduct = product;
     pill.textContent = `${product.brand} · ${product.name}`;
-    statusEl.textContent = TRYON_STATUS_TEXT.camera;
+    statusEl.textContent = '카메라를 준비하고 있어요...';
     statusEl.classList.remove('error');
+    showTryOnLive();
     modal.classList.add('show');
 
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -295,20 +293,50 @@ export function initGounApp(root, supabase) {
       return;
     }
 
-    stopTryOn = await startVirtualTryOn({
-      video,
-      canvas,
-      product,
-      onStatus: (status, err) => {
-        if (err) console.error('[tryon]', status, err);
-        if (!document.getElementById('tryon-modal')?.classList.contains('show')) return;
-        statusEl.textContent = TRYON_STATUS_TEXT[status] ?? '';
-        statusEl.classList.toggle('error', status.endsWith('-error'));
-      },
-    });
+    try {
+      tryOnStream = await startCameraPreview(video);
+      statusEl.textContent = '얼굴이 잘 보이게 맞추고 촬영 버튼을 눌러주세요';
+    } catch (err) {
+      console.error('[tryon] camera-error', err);
+      statusEl.textContent = '카메라를 사용할 수 없어요. 브라우저 설정에서 카메라 권한을 허용해주세요';
+      statusEl.classList.add('error');
+    }
   }
 
   document.getElementById('tryon-close-btn')?.addEventListener('click', closeTryOn);
+
+  document.getElementById('tryon-shutter-btn')?.addEventListener('click', async () => {
+    const video = document.getElementById('tryon-video');
+    const resultCanvas = document.getElementById('tryon-result');
+    const statusEl = document.getElementById('tryon-status');
+    if (!video || !resultCanvas || !tryOnProduct) return;
+
+    statusEl.textContent = 'AI가 화장을 입히고 있어요...';
+    statusEl.classList.remove('error');
+    try {
+      const { canvas, faceFound } = await capturePhotoWithMakeup(video, tryOnProduct);
+      resultCanvas.width = canvas.width;
+      resultCanvas.height = canvas.height;
+      resultCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+      document.getElementById('tryon-video')?.classList.add('hidden');
+      resultCanvas.classList.remove('hidden');
+      document.getElementById('tryon-shutter-wrap')?.classList.add('hidden');
+      document.getElementById('tryon-result-actions')?.classList.remove('hidden');
+      statusEl.textContent = faceFound ? '' : '얼굴을 못 찾았어요. 다시 찍어주세요';
+      statusEl.classList.toggle('error', !faceFound);
+    } catch (err) {
+      console.error('[tryon] capture-error', err);
+      statusEl.textContent = 'AI 모델을 불러오지 못했어요. 인터넷 연결을 확인하고 다시 시도해주세요';
+      statusEl.classList.add('error');
+    }
+  });
+
+  document.getElementById('tryon-retake-btn')?.addEventListener('click', () => {
+    showTryOnLive();
+    document.getElementById('tryon-status').textContent = '얼굴이 잘 보이게 맞추고 촬영 버튼을 눌러주세요';
+    document.getElementById('tryon-status').classList.remove('error');
+  });
 
   async function loadProducts() {
     const { data, error } = await supabase
@@ -941,6 +969,6 @@ export function initGounApp(root, supabase) {
     authListenerActive = false;
     clearInterval(flagInterval);
     authSubscription?.subscription?.unsubscribe();
-    if (stopTryOn) stopTryOn();
+    stopStream(tryOnStream);
   };
 }

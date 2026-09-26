@@ -401,11 +401,11 @@ html,body{
 
 .tryon-backdrop{ background:#000; padding:0; z-index:70; }
 .tryon-stage{ position:relative; width:100%; height:100%; max-width:430px; margin:0 auto; overflow:hidden; background:#000; }
-.tryon-video, .tryon-canvas{
+.tryon-video, .tryon-result{
   position:absolute; top:0; left:0; width:100%; height:100%;
-  object-fit:cover; transform: scaleX(-1);
+  object-fit:cover;
 }
-.tryon-canvas{ pointer-events:none; }
+.tryon-video{ transform: scaleX(-1); }
 .tryon-top{
   position:absolute; top:0; left:0; right:0; z-index:2;
   display:flex; align-items:center; justify-content:space-between;
@@ -417,11 +417,24 @@ html,body{
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
 .tryon-status{
-  position:absolute; left:0; right:0; bottom: max(28px, env(safe-area-inset-bottom)); z-index:2;
+  position:absolute; left:0; right:0; bottom: calc(118px + env(safe-area-inset-bottom)); z-index:2;
   text-align:center; color:#fff; font-size:13px; font-weight:600; text-shadow:0 1px 4px rgba(0,0,0,.6);
   padding: 0 24px;
 }
 .tryon-status.error{ color:#FFB4B4; }
+.tryon-bottom{
+  position:absolute; left:0; right:0; bottom: max(32px, env(safe-area-inset-bottom)); z-index:2;
+  display:flex; justify-content:center; padding: 0 24px;
+}
+.tryon-shutter-btn{
+  width:70px; height:70px; border-radius:999px; background:transparent;
+  border:4px solid #fff; padding:4px; cursor:pointer;
+}
+.tryon-shutter-btn::after{
+  content:''; display:block; width:100%; height:100%; border-radius:999px; background:#fff;
+}
+.tryon-shutter-btn:active::after{ background: var(--coral); }
+.tryon-result-actions{ width:100%; }
 .modal-lock{ width:52px; height:52px; border-radius:50%; background:#FFF4DE; color:#B9781A; display:flex; align-items:center; justify-content:center; font-size:22px; margin:0 auto 14px; }
 .modal-card h3{ font-size:16.5px; margin:0 0 8px; }
 .modal-compare{ display:flex; justify-content:space-around; align-items:center; background: var(--surface-sunken); border-radius: var(--radius-md); padding:12px; margin:16px 0; }
