@@ -534,12 +534,58 @@ export const GOUN_MARKUP = `
       <div class="history-list" id="history-list"></div>
       <p class="muted center small hidden" id="history-empty">아직 포인트 내역이 없어요</p>
 
+      <button class="advertiser-link" data-nav="creatorpage">
+        <span>제품 추천하고 커미션 받기</span>
+        <span class="advertiser-link-cta">내 추천 페이지 만들기 <i data-icon="chevron-right"></i></span>
+      </button>
+
       <button class="advertiser-link" data-nav="adinquiry">
         <span>광고주이신가요?</span>
         <span class="advertiser-link-cta">광고 문의하기 <i data-icon="chevron-right"></i></span>
       </button>
 
       <button class="delete-account-link" id="delete-account-btn">회원 탈퇴</button>
+    </div>
+  </section>
+
+  <!-- ===================== CREATOR PAGE EDITOR ===================== -->
+  <section id="view-creatorpage" class="view">
+    <header class="sub-header">
+      <button class="icon-btn" data-nav="mypage"><i data-icon="chevron-left"></i></button>
+      <span>내 추천 페이지</span>
+      <span class="spacer"></span>
+    </header>
+
+    <div class="scroll-pad">
+      <p class="muted" style="margin-bottom:16px;">내 제품 추천을 모아서 공개 페이지를 만들어요. 인스타그램 프로필 링크에 붙여넣기 좋아요.</p>
+
+      <div id="creatorpage-setup">
+        <div class="ad-field-group">
+          <label class="ad-label">공개 링크 주소</label>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="muted small" style="white-space:nowrap;">/c/</span>
+            <input class="login-input" id="creatorpage-handle-input" placeholder="예: minji_beauty" style="flex-grow:1;">
+          </div>
+        </div>
+        <div class="ad-field-group">
+          <label class="ad-label">한 줄 소개</label>
+          <input class="login-input" id="creatorpage-bio-input" placeholder="예: 데일리 K-뷰티 추천 크리에이터">
+        </div>
+        <button class="btn-primary btn-block" id="creatorpage-save-btn">페이지 만들기</button>
+      </div>
+
+      <div id="creatorpage-live" class="invite-card hidden">
+        <p class="invite-title" id="creatorpage-live-url">/c/...</p>
+        <p class="muted small">내 공개 추천 페이지가 만들어졌어요</p>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn-outline btn-block" id="creatorpage-copy-btn">링크 복사</button>
+          <button class="btn-primary btn-block" id="creatorpage-share-btn">공유하기</button>
+        </div>
+      </div>
+
+      <h3 class="section-title" style="margin-top:22px;">추천 제품 고르기</h3>
+      <p class="muted small" style="margin-bottom:10px;">탭해서 페이지에 넣을 제품을 담아보세요</p>
+      <div class="product-select-list" id="creatorpage-product-list"></div>
     </div>
   </section>
 

@@ -392,6 +392,7 @@ export function initGounApp(root, supabase) {
     LAB_PRODUCTS = (!error && data && data.length) ? data : LAB_PRODUCTS_FALLBACK;
     renderLabProducts(document.getElementById('lab-search')?.value || '');
     renderColorResult(currentColorType);
+    renderCreatorProductList();
   }
 
   let labTypeFilter = 'all';
@@ -839,11 +840,14 @@ export function initGounApp(root, supabase) {
       updateProfileUI(session.user);
       loadWishlist(currentUserId);
       loadProfilePoints(currentUserId);
+      loadCreatorPage(currentUserId);
       showToast('환영해요! 고운을 시작해볼까요');
       goTo('home');
     } else if (event === 'SIGNED_OUT') {
       currentUserId = null;
       wishlist = [];
+      creatorHandle = null;
+      creatorPicks = [];
       updateProfileUI(null);
       renderWishlist();
       renderLabProducts(document.getElementById('lab-search')?.value || '');
@@ -862,6 +866,7 @@ export function initGounApp(root, supabase) {
       updateProfileUI(session.user);
       loadWishlist(currentUserId);
       loadProfilePoints(currentUserId);
+      loadCreatorPage(currentUserId);
       goTo('home');
     }
   });
@@ -1042,6 +1047,132 @@ export function initGounApp(root, supabase) {
     `).join('');
     paintIcons(list);
   }
+
+  /* ---------- Creator public page ("내 추천 페이지") ---------- */
+  let creatorHandle = null;
+  let creatorPicks = [];
+
+  async function loadCreatorPage(userId) {
+    const { data: page } = await supabase
+      .from('creator_pages')
+      .select('handle, bio')
+      .eq('user_id', userId)
+      .maybeSingle();
+    creatorHandle = page?.handle || null;
+
+    const handleInput = document.getElementById('creatorpage-handle-input');
+    const bioInput = document.getElementById('creatorpage-bio-input');
+    if (handleInput) handleInput.value = creatorHandle || '';
+    if (bioInput) bioInput.value = page?.bio || '';
+
+    document.getElementById('creatorpage-setup')?.classList.toggle('hidden', !!creatorHandle);
+    const liveBox = document.getElementById('creatorpage-live');
+    liveBox?.classList.toggle('hidden', !creatorHandle);
+    if (creatorHandle) {
+      const urlEl = document.getElementById('creatorpage-live-url');
+      if (urlEl) urlEl.textContent = `${window.location.origin}/c/${creatorHandle}`;
+    }
+
+    const { data: picks } = await supabase
+      .from('creator_picks')
+      .select('brand, name, price, color, type')
+      .eq('user_id', userId);
+    creatorPicks = picks || [];
+    renderCreatorProductList();
+  }
+
+  function renderCreatorProductList() {
+    const list = document.getElementById('creatorpage-product-list');
+    if (!list) return;
+    const pickedNames = new Set(creatorPicks.map(p => p.name));
+    list.innerHTML = LAB_PRODUCTS.filter(p => !p.locked).map(p => {
+      const picked = pickedNames.has(p.name);
+      return `
+        <button class="product-item${picked ? ' selected' : ''}" data-name="${p.name}">
+          <span class="product-thumb" style="background:linear-gradient(145deg, ${p.color}, ${p.color}cc)">
+            <span data-icon="${TYPE_ICON[p.type] || 'flask'}"></span>
+            <span class="product-color-dot" style="background:${p.color}"></span>
+          </span>
+          <span class="product-info">
+            <span class="product-brand">${p.brand}</span><br>
+            <span class="product-name">${p.name}</span><br>
+            <span class="product-price">${p.price}</span>
+          </span>
+          <span class="check-icon" data-icon="check" style="visibility:${picked ? 'visible' : 'hidden'}"></span>
+        </button>
+      `;
+    }).join('');
+    list.querySelectorAll('.product-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const product = LAB_PRODUCTS.find(p => p.name === btn.getAttribute('data-name'));
+        if (product) toggleCreatorPick(product);
+      });
+    });
+    paintIcons(list);
+  }
+
+  async function toggleCreatorPick(product) {
+    if (!currentUserId) { showToast('로그인 후 이용해주세요'); return; }
+    const { brand, name, price, color, type } = product;
+    const already = creatorPicks.some(p => p.name === name);
+    if (already) {
+      creatorPicks = creatorPicks.filter(p => p.name !== name);
+      renderCreatorProductList();
+      await supabase.from('creator_picks').delete().eq('user_id', currentUserId).eq('name', name);
+    } else {
+      creatorPicks.push({ brand, name, price, color, type });
+      renderCreatorProductList();
+      await supabase.from('creator_picks').insert({ user_id: currentUserId, brand, name, price, color, type });
+    }
+  }
+
+  document.getElementById('creatorpage-save-btn')?.addEventListener('click', async () => {
+    if (!currentUserId) { showToast('로그인 후 이용해주세요'); return; }
+    const handle = document.getElementById('creatorpage-handle-input')?.value.trim().toLowerCase();
+    const bio = document.getElementById('creatorpage-bio-input')?.value.trim();
+    if (!handle || !/^[a-z0-9_]{3,20}$/.test(handle)) {
+      showToast('링크 주소는 영문 소문자/숫자/_ 3~20자로 입력해주세요');
+      return;
+    }
+    const btn = document.getElementById('creatorpage-save-btn');
+    btn.disabled = true;
+    const { error } = await supabase
+      .from('creator_pages')
+      .upsert({ user_id: currentUserId, handle, bio }, { onConflict: 'user_id' });
+    btn.disabled = false;
+    if (error) {
+      showToast(error.code === '23505' ? '이미 사용 중인 링크 주소예요' : '저장에 실패했어요, 다시 시도해주세요');
+      return;
+    }
+    showToast('페이지가 만들어졌어요!');
+    loadCreatorPage(currentUserId);
+  });
+
+  document.getElementById('creatorpage-copy-btn')?.addEventListener('click', async () => {
+    if (!creatorHandle) return;
+    const url = `${window.location.origin}/c/${creatorHandle}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('링크를 복사했어요');
+    } catch {
+      showToast(url);
+    }
+  });
+
+  document.getElementById('creatorpage-share-btn')?.addEventListener('click', async () => {
+    if (!creatorHandle) return;
+    const url = `${window.location.origin}/c/${creatorHandle}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: '내 고운 추천 페이지', url }); } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast('링크를 복사했어요');
+      } catch {
+        showToast(url);
+      }
+    }
+  });
 
   /* ---------- Advertising: inquiry & self-serve ---------- */
   let adSlot = 'feed', adDuration = 7;
