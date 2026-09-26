@@ -222,7 +222,7 @@ export function stopStream(stream) {
  * selected product's makeup onto it.
  * Returns { canvas, faceFound }.
  */
-export async function capturePhotoWithMakeup(video, product) {
+export async function capturePhotoWithMakeup(video, products) {
   const canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
@@ -236,7 +236,8 @@ export async function capturePhotoWithMakeup(video, product) {
   const result = landmarker.detect(canvas);
   const face = result?.faceLandmarks?.[0];
   if (face) {
-    drawForProduct(ctx, face, canvas.width, canvas.height, product);
+    const list = Array.isArray(products) ? products : [products];
+    list.forEach((product) => drawForProduct(ctx, face, canvas.width, canvas.height, product));
   }
   return { canvas, faceFound: !!face };
 }
