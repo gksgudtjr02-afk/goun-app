@@ -73,11 +73,13 @@ function drawLips(ctx, landmarks, w, h, color) {
   const width = Math.hypot(lCorner.x - rCorner.x, lCorner.y - rCorner.y);
   const blurPx = Math.min(6, Math.max(1.5, width * 0.05));
 
-  // Base tint: 'color' blend keeps the lips' own shading/highlights and only
-  // swaps the hue, so it reads as makeup rather than a flat paint fill.
+  // Base tint. Non-separable blend modes ('color'/'multiply') combined with a
+  // canvas filter render inconsistently on some mobile GPUs (near-invisible on
+  // several Android devices), so this stays on plain alpha compositing, which
+  // is universally supported.
   ctx.save();
-  ctx.globalCompositeOperation = 'color';
-  ctx.globalAlpha = 0.8;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 0.62;
   ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = color;
   ctx.fill(combined, 'evenodd');
@@ -121,8 +123,8 @@ function drawEyeshadowSide(ctx, landmarks, w, h, color, upperIndices) {
   const blurPx = Math.min(5, Math.max(1.5, eyeWidth * 0.06));
 
   ctx.save();
-  ctx.globalCompositeOperation = 'color';
-  ctx.globalAlpha = 0.65;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 0.55;
   ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = gradient;
   ctx.fill(path);
@@ -146,8 +148,8 @@ function drawBlushSide(ctx, landmarks, w, h, color, eyeCornerIdx, mouthCornerIdx
   gradient.addColorStop(1, 'rgba(255,255,255,0)');
   const blurPx = Math.min(8, Math.max(2, radius * 0.15));
   ctx.save();
-  ctx.globalCompositeOperation = 'color';
-  ctx.globalAlpha = 0.55;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 0.4;
   ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = gradient;
   ctx.beginPath();
