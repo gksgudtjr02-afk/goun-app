@@ -54,9 +54,14 @@ export const GOUN_MARKUP = `
       <span class="brand"><span class="brand-en">GOUN</span><span class="goun-header-mark" aria-label="고운"></span></span>
       <div class="header-icons">
         <button class="icon-btn" data-nav="wishlist" aria-label="위시리스트"><i data-icon="heart"></i></button>
-        <button class="icon-btn" aria-label="검색"><i data-icon="search"></i></button>
+        <button class="icon-btn" id="feed-search-toggle" aria-label="검색"><i data-icon="search"></i></button>
       </div>
     </header>
+
+    <div class="search-box feed-search-box hidden" id="feed-search-box">
+      <i data-icon="search"></i>
+      <input class="search-input" id="feed-search-input" placeholder="크리에이터, 캡션으로 검색">
+    </div>
 
     <button class="weather-strip" data-nav="touchup">
       <i data-icon="cloud"></i>

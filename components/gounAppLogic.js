@@ -107,11 +107,20 @@ export function initGounApp(root, supabase) {
     });
   }
 
-  function renderGrid(filter = 'all') {
+  function renderGrid(filter = 'all', keyword = '') {
     const grid = document.getElementById('feed-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    FEED.filter(v => filter === 'all' || v.cat === filter).forEach(v => {
+    const q = keyword.trim().toLowerCase();
+    const filtered = FEED.filter(v =>
+      (filter === 'all' || v.cat === filter) &&
+      (!q || v.name.toLowerCase().includes(q) || v.caption.toLowerCase().includes(q))
+    );
+    if (filtered.length === 0) {
+      grid.innerHTML = '<p class="muted center feed-empty">검색 결과가 없어요</p>';
+      return;
+    }
+    filtered.forEach(v => {
       const item = document.createElement('div');
       item.className = 'grid-item';
       item.innerHTML = `
@@ -133,7 +142,7 @@ export function initGounApp(root, supabase) {
       .order('created_at', { ascending: false });
     FEED = (!error && data && data.length) ? data : FEED_FALLBACK;
     const activeFilter = document.querySelector('.chip.active')?.getAttribute('data-filter') || 'all';
-    renderGrid(activeFilter);
+    renderGrid(activeFilter, document.getElementById('feed-search-input')?.value || '');
   }
 
   /* ---------- Navigation ---------- */
@@ -169,8 +178,28 @@ export function initGounApp(root, supabase) {
     chip.addEventListener('click', () => {
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-      renderGrid(chip.getAttribute('data-filter'));
+      renderGrid(chip.getAttribute('data-filter'), document.getElementById('feed-search-input')?.value || '');
     });
+  });
+
+  /* ---------- Feed search ---------- */
+  const feedSearchBox = document.getElementById('feed-search-box');
+  const feedSearchInput = document.getElementById('feed-search-input');
+  document.getElementById('feed-search-toggle')?.addEventListener('click', () => {
+    const isHidden = feedSearchBox.classList.contains('hidden');
+    if (isHidden) {
+      feedSearchBox.classList.remove('hidden');
+      feedSearchInput.focus();
+    } else {
+      feedSearchBox.classList.add('hidden');
+      feedSearchInput.value = '';
+      const activeFilter = document.querySelector('.chip.active')?.getAttribute('data-filter') || 'all';
+      renderGrid(activeFilter);
+    }
+  });
+  feedSearchInput?.addEventListener('input', () => {
+    const activeFilter = document.querySelector('.chip.active')?.getAttribute('data-filter') || 'all';
+    renderGrid(activeFilter, feedSearchInput.value);
   });
 
   /* ---------- Player ---------- */
