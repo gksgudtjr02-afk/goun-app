@@ -427,10 +427,12 @@ export const GOUN_MARKUP = `
       </div>
 
       <div class="product-select-list" id="lab-products"></div>
+      <p class="muted center small" style="margin-top:12px;">포인트 320P 보유 · 체험권 1장 500P</p>
+    </div>
 
+    <div class="lab-action-bar">
+      <button class="btn-outline btn-block" id="try-selected-btn">발라보기 (카메라 켜기)</button>
       <button class="btn-primary btn-block hidden" id="buy-selected-btn">이 제품 구매하러 가기</button>
-      <button class="btn-outline btn-block" id="try-selected-btn">발라보기</button>
-      <p class="muted center small">포인트 320P 보유 · 체험권 1장 500P</p>
     </div>
   </section>
 

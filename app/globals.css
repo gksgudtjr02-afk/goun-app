@@ -440,6 +440,14 @@ html,body{
 .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
 
 /* ---------- Bottom Nav ---------- */
+#view-lab .scroll-pad{ padding-bottom: 130px; }
+
+.lab-action-bar{
+  position:fixed; left:50%; transform: translateX(-50%);
+  bottom: calc(70px + env(safe-area-inset-bottom)); width:100%; max-width:430px;
+  padding: 0 20px; box-sizing:border-box; display:flex; flex-direction:column; gap:8px; z-index:35;
+}
+
 .bottom-nav{
   position:fixed; left:50%; bottom:0; transform: translateX(-50%);
   width:100%; max-width:430px; background: rgba(255,251,248,.92); backdrop-filter: blur(14px);
