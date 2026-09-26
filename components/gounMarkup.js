@@ -519,6 +519,17 @@ export const GOUN_MARKUP = `
         </div>
       </div>
 
+      <div class="invite-card">
+        <div class="invite-card-top">
+          <span class="invite-icon"><i data-icon="user-plus"></i></span>
+          <div>
+            <p class="invite-title">친구 초대하고 포인트 받기</p>
+            <p class="muted small">친구가 가입하고 첫 활동하면 나 500P, 친구는 +300P</p>
+          </div>
+        </div>
+        <button class="btn-primary btn-block" id="invite-share-btn">초대 링크 공유하기</button>
+      </div>
+
       <h3 class="section-title">포인트 내역</h3>
       <div class="history-list" id="history-list"></div>
       <p class="muted center small hidden" id="history-empty">아직 포인트 내역이 없어요</p>

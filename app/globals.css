@@ -396,6 +396,11 @@ html,body{
 .points-actions{ display:flex; gap:10px; }
 .points-actions button{ flex:1; padding:11px; font-size:13px; border-radius: var(--radius-pill); border:none; font-family:inherit; font-weight:600; cursor:pointer; }
 .points-actions .btn-outline{ border:1.4px solid var(--line); background:#fff; }
+.invite-card{ background: linear-gradient(135deg, #EEE9FF, #FFE7EC); border-radius: var(--radius-lg); padding:18px; margin-bottom:22px; }
+.invite-card-top{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.invite-icon{ width:44px; height:44px; border-radius:999px; background:#fff; color: var(--purple-deep); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:19px; }
+.invite-title{ font-size:13.5px; font-weight:700; margin:0 0 2px; }
+
 .section-title{ font-size:14.5px; margin: 0 0 10px; }
 .history-list{ display:flex; flex-direction:column; }
 .history-row{ display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); font-size:13px; }

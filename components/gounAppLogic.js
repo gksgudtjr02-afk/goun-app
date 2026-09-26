@@ -143,6 +143,15 @@ export function initGounApp(root, supabase) {
   if (!root || root.dataset.gounInit) return () => {};
   root.dataset.gounInit = '1';
 
+  // Capture ?ref=<uuid> from an invite link before it's lost to navigation;
+  // applied to the new profile's referred_by once the user actually signs up.
+  try {
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (ref && /^[0-9a-f-]{36}$/i.test(ref)) {
+      localStorage.setItem('goun_ref', ref);
+    }
+  } catch {}
+
   function paintIcons(scope = document) {
     scope.querySelectorAll('[data-icon]').forEach(el => {
       const body = ICONS[el.getAttribute('data-icon')];
@@ -634,6 +643,31 @@ export function initGounApp(root, supabase) {
     if (emailEl) emailEl.textContent = user.email || '';
   }
 
+  async function awardPoints(userId, amount, label) {
+    const { data: p } = await supabase.from('profiles').select('points').eq('id', userId).maybeSingle();
+    const current = p?.points ?? 0;
+    await supabase.from('profiles').update({ points: current + amount }).eq('id', userId);
+    await supabase.from('point_history').insert({ user_id: userId, label, amount });
+  }
+
+  // First real activity (adding a wishlist item) after signing up via an
+  // invite link pays out both the referrer and the referred user, once.
+  async function maybeRewardReferral() {
+    if (!currentUserId) return;
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('referred_by, referral_rewarded')
+      .eq('id', currentUserId)
+      .maybeSingle();
+    if (!profile?.referred_by || profile.referral_rewarded) return;
+
+    await supabase.from('profiles').update({ referral_rewarded: true }).eq('id', currentUserId);
+    await awardPoints(currentUserId, 300, '친구 초대로 받은 포인트');
+    await awardPoints(profile.referred_by, 500, '친구 초대 성공 포인트');
+    showToast('친구 초대 보너스 300P를 받았어요!');
+    loadProfilePoints(currentUserId);
+  }
+
   async function loadProfilePoints(userId) {
     let { data: profile } = await supabase
       .from('profiles')
@@ -642,9 +676,22 @@ export function initGounApp(root, supabase) {
       .maybeSingle();
 
     if (!profile) {
-      await supabase.from('profiles').insert({ id: userId, points: 500 });
+      let referredBy = null;
+      try {
+        const ref = localStorage.getItem('goun_ref');
+        if (ref && ref !== userId) referredBy = ref;
+      } catch {}
+
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({ id: userId, points: 500, referred_by: referredBy });
+      if (insertError && referredBy) {
+        // referred_by likely didn't match a real user; retry without it
+        await supabase.from('profiles').insert({ id: userId, points: 500 });
+      }
       await supabase.from('point_history').insert({ user_id: userId, label: '가입 환영 포인트', amount: 500 });
       profile = { points: 500 };
+      try { localStorage.removeItem('goun_ref'); } catch {}
     }
 
     const pointsEl = document.getElementById('points-num');
@@ -721,6 +768,24 @@ export function initGounApp(root, supabase) {
 
   document.getElementById('logout-btn')?.addEventListener('click', async () => {
     await supabase.auth.signOut();
+  });
+
+  document.getElementById('invite-share-btn')?.addEventListener('click', async () => {
+    if (!currentUserId) { showToast('로그인 후 이용해주세요'); return; }
+    const link = `${window.location.origin}/?ref=${currentUserId}`;
+    const shareText = '고운에서 나랑 같이 K-뷰티 취향 찾아볼래? 가입하면 포인트 받아가!';
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: '고운 초대', text: shareText, url: link });
+      } catch {}
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast('초대 링크를 복사했어요');
+    } catch {
+      showToast(link);
+    }
   });
 
   document.getElementById('delete-account-btn')?.addEventListener('click', async () => {
@@ -918,6 +983,7 @@ export function initGounApp(root, supabase) {
 
   async function addToWishlist(product) {
     const { brand, name, price, color, type } = product;
+    const wasFirstItem = wishlist.length === 0;
     wishlist.push({ brand, name, price, color, type });
     renderWishlist();
     showToast('위시리스트에 담았어요');
@@ -929,6 +995,8 @@ export function initGounApp(root, supabase) {
       renderWishlist();
       renderLabProducts(document.getElementById('lab-search')?.value || '');
       showToast('저장에 실패했어요, 다시 시도해주세요');
+    } else if (wasFirstItem) {
+      maybeRewardReferral();
     }
   }
 
