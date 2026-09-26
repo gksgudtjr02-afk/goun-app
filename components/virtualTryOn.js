@@ -72,11 +72,37 @@ function drawLips(ctx, landmarks, t, color) {
   const combined = new Path2D();
   combined.addPath(pathFromIndices(landmarks, LIPS_OUTER, t));
   combined.addPath(pathFromIndices(landmarks, LIPS_INNER, t));
+
+  const rCorner = toPoint(landmarks, MOUTH_CORNER_R, t);
+  const lCorner = toPoint(landmarks, MOUTH_CORNER_L, t);
+  const width = Math.hypot(lCorner.x - rCorner.x, lCorner.y - rCorner.y);
+  const blurPx = Math.min(6, Math.max(1.5, width * 0.05));
+
+  // Base tint: blurred edges so it blends into skin instead of a hard outline.
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
   ctx.globalAlpha = 0.55;
+  ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = color;
   ctx.fill(combined, 'evenodd');
+  ctx.filter = 'none';
+  ctx.restore();
+
+  // Gloss highlight on the lower lip, like a tint/gloss product catching light.
+  const lowerCenter = toPoint(landmarks, 14, t);
+  const glossR = Math.max(width * 0.09, 3);
+  const gloss = ctx.createRadialGradient(lowerCenter.x, lowerCenter.y, 0, lowerCenter.x, lowerCenter.y, glossR);
+  gloss.addColorStop(0, 'rgba(255,255,255,0.85)');
+  gloss.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.5;
+  ctx.filter = `blur(${blurPx * 0.6}px)`;
+  ctx.fillStyle = gloss;
+  ctx.beginPath();
+  ctx.arc(lowerCenter.x, lowerCenter.y, glossR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.filter = 'none';
   ctx.restore();
 }
 
@@ -90,11 +116,21 @@ function drawEyeshadowSide(ctx, landmarks, t, color, upperIndices) {
   upperPts.forEach((p, i) => (i === 0 ? path.moveTo(p.x, p.y) : path.lineTo(p.x, p.y)));
   for (let i = upperPts.length - 1; i >= 0; i--) path.lineTo(upperPts[i].x, upperPts[i].y - lift);
   path.closePath();
+
+  // Darker near the lash line, fading out toward the brow, instead of a flat block of color.
+  const mid = upperPts[Math.floor(upperPts.length / 2)];
+  const gradient = ctx.createLinearGradient(mid.x, mid.y, mid.x, mid.y - lift);
+  gradient.addColorStop(0, color);
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  const blurPx = Math.min(5, Math.max(1.5, eyeWidth * 0.06));
+
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
-  ctx.globalAlpha = 0.4;
-  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.45;
+  ctx.filter = `blur(${blurPx}px)`;
+  ctx.fillStyle = gradient;
   ctx.fill(path);
+  ctx.filter = 'none';
   ctx.restore();
 }
 
@@ -112,13 +148,16 @@ function drawBlushSide(ctx, landmarks, t, color, eyeCornerIdx, mouthCornerIdx, d
   const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
   gradient.addColorStop(0, color);
   gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  const blurPx = Math.min(8, Math.max(2, radius * 0.15));
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
   ctx.globalAlpha = 0.35;
+  ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = gradient;
   ctx.beginPath();
   ctx.arc(cx, cy, Math.max(radius, 1), 0, Math.PI * 2);
   ctx.fill();
+  ctx.filter = 'none';
   ctx.restore();
 }
 
