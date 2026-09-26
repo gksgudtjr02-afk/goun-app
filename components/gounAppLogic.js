@@ -515,7 +515,7 @@ export function initGounApp(root, supabase) {
   });
   document.getElementById('buy-selected-btn')?.addEventListener('click', () => {
     const names = Object.values(selectedProducts).map(p => p.name).join(', ');
-    showToast(`올리브영에서 ${names} 구매 페이지로 이동해요`);
+    showToast(`쿠팡에서 ${names} 구매 페이지로 이동해요`);
   });
   document.getElementById('modal-dismiss')?.addEventListener('click', () => document.getElementById('lock-modal').classList.remove('show'));
   document.getElementById('modal-upgrade')?.addEventListener('click', () => document.getElementById('lock-modal').classList.remove('show'));
@@ -598,36 +598,6 @@ export function initGounApp(root, supabase) {
     });
     paintIcons(list);
   }
-
-  /* ---------- Makeup Battle ---------- */
-  let battleVoted = false;
-  document.querySelectorAll('.battle-card').forEach(card => {
-    card.addEventListener('click', function () {
-      if (battleVoted) return;
-      battleVoted = true;
-      const side = this.getAttribute('data-side');
-      document.querySelectorAll('.battle-card').forEach(c => c.classList.remove('voted'));
-      this.classList.add('voted');
-      document.getElementById('battle-pct-left').textContent = (side === 'left' ? 68 : 32) + '%';
-      document.getElementById('battle-pct-right').textContent = (side === 'left' ? 32 : 68) + '%';
-      document.getElementById('battle-bar-fill').style.width = (side === 'left' ? 68 : 32) + '%';
-      document.getElementById('battle-vote-count').textContent = '1,205명 참여';
-      showToast('투표 완료! 결과에 반영됐어요');
-    });
-  });
-  document.getElementById('battle-next-btn')?.addEventListener('click', () => {
-    battleVoted = false;
-    document.querySelectorAll('.battle-card').forEach(c => c.classList.remove('voted'));
-    document.getElementById('battle-pct-left').textContent = '52%';
-    document.getElementById('battle-pct-right').textContent = '48%';
-    document.getElementById('battle-bar-fill').style.width = '52%';
-    document.getElementById('battle-vote-count').textContent = '1,204명 참여';
-    showToast('다음 배틀을 불러왔어요');
-  });
-  document.getElementById('battle-upload-btn')?.addEventListener('click', () => {
-    showToast('사진을 올리면 내 배틀이 만들어져요');
-    goTo('camera');
-  });
 
   /* ---------- Auth: real Supabase login / signup / logout / OAuth ---------- */
   function updateProfileUI(user) {
@@ -899,13 +869,6 @@ export function initGounApp(root, supabase) {
       '고운에서 내 퍼스널 컬러를 진단받았어요 ✨ #고운 #GOUN #퍼스널컬러'
     );
   });
-  document.getElementById('battle-share-btn')?.addEventListener('click', () => {
-    shareContent(
-      '고운 화장 배틀',
-      '민지 vs Sakura, 어느 쪽 화장이 더 잘 어울려요? 투표해보세요! #고운 #GOUN #화장배틀'
-    );
-  });
-
   /* ---------- Ingredient Scanner ---------- */
   document.getElementById('scan-btn')?.addEventListener('click', function () {
     this.disabled = true;
