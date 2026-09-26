@@ -539,11 +539,17 @@ export function initGounApp(root, supabase) {
   });
 
   const OAUTH_PROVIDERS = { 'social-kakao-btn': 'kakao', 'social-apple-btn': 'apple', 'social-google-btn': 'google' };
+  // 카카오는 아직 이메일 제공 권한이 비즈 심사 전이라, account_email이 섞이면
+  // KOE205로 인가 자체가 막힘. 닉네임/프로필 사진만 명시적으로 요청.
+  const OAUTH_SCOPES = { kakao: 'profile_nickname profile_image' };
   Object.entries(OAUTH_PROVIDERS).forEach(([btnId, provider]) => {
     document.getElementById(btnId)?.addEventListener('click', async () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          ...(OAUTH_SCOPES[provider] ? { scopes: OAUTH_SCOPES[provider] } : {}),
+        },
       });
       if (error) showToast(error.message);
     });
