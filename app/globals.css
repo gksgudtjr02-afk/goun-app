@@ -445,7 +445,8 @@ html,body{
 .lab-action-bar{
   position:fixed; left:50%; transform: translateX(-50%);
   bottom: calc(70px + env(safe-area-inset-bottom)); width:100%; max-width:430px;
-  padding: 0 20px; box-sizing:border-box; display:flex; flex-direction:column; gap:8px; z-index:35;
+  padding: 24px 20px 10px; box-sizing:border-box; display:flex; flex-direction:column; gap:8px; z-index:35;
+  background: linear-gradient(180deg, rgba(255,251,248,0) 0%, var(--bg) 38%);
 }
 
 .bottom-nav{

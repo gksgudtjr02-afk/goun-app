@@ -431,8 +431,8 @@ export const GOUN_MARKUP = `
     </div>
 
     <div class="lab-action-bar">
-      <button class="btn-outline btn-block" id="try-selected-btn">발라보기 (카메라 켜기)</button>
-      <button class="btn-primary btn-block hidden" id="buy-selected-btn">이 제품 구매하러 가기</button>
+      <button class="btn-primary btn-block" id="try-selected-btn"><i data-icon="camera"></i> 발라보기 (카메라 켜기)</button>
+      <button class="btn-secondary btn-block hidden" id="buy-selected-btn">이 제품 구매하러 가기</button>
     </div>
   </section>
 
