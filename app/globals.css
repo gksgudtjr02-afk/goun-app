@@ -189,6 +189,7 @@ html,body{
 .mini-banner strong{ font-size:13px; font-weight:700; }
 .mini-banner span{ font-size:10.5px; opacity:.85; }
 .mini-banner-color{ background: linear-gradient(135deg, #FF9472, #FF5A6E); }
+.mini-banner-battle{ background: linear-gradient(135deg, #7C5CFC, #4A2FD8); }
 
 .look-preset-row{ display:flex; gap:10px; padding: 0 20px 18px; overflow-x:auto; }
 .look-preset-card{
@@ -516,6 +517,22 @@ html,body{
 .palette-swatch{ flex:1; aspect-ratio:1; border-radius: var(--radius-sm); border:1px solid rgba(0,0,0,.06); }
 .color-product-section{ margin-bottom:18px; }
 #share-color-btn{ background: linear-gradient(135deg, var(--coral), var(--purple)); }
+
+/* ---------- Makeup Battle ---------- */
+.battle-stage{ display:flex; align-items:center; gap:10px; margin: 16px 0 14px; }
+.battle-card{
+  flex:1; border:2px solid var(--line); border-radius: var(--radius-lg); padding: 16px 10px;
+  background:#fff; display:flex; flex-direction:column; align-items:center; gap:8px;
+  font-family:inherit; cursor:pointer; transition: border-color .15s ease;
+}
+.battle-card.voted{ border-color: var(--coral); background: var(--coral-tint); }
+.battle-avatar{ width:100%; aspect-ratio:1; border-radius: var(--radius-md); background: var(--surface-sunken); display:flex; align-items:center; justify-content:center; font-size:40px; color: var(--ink-faint); }
+.battle-name{ font-size:12.5px; font-weight:600; }
+.battle-pct{ font-size:17px; font-weight:800; color: var(--coral-deep); }
+.battle-vs{ font-size:13px; font-weight:800; color: var(--ink-faint); flex-shrink:0; }
+.battle-bar{ height:10px; background: var(--purple-tint); border-radius: var(--radius-pill); overflow:hidden; margin-bottom:6px; display:flex; }
+.battle-bar-fill{ height:100%; background: linear-gradient(90deg, var(--coral), #FF8A5C); transition: width .4s ease; }
+#battle-next-btn{ margin: 16px 0 10px; }
 
 /* ---------- Login ---------- */
 .login-wrap{ min-height:100vh; min-height:100dvh; padding: 70px 24px 40px; display:flex; flex-direction:column; }

@@ -90,6 +90,16 @@ export const GOUN_MARKUP = `
         <strong>퍼스널 컬러 진단</strong>
         <span>내 웜톤/쿨톤 찾기</span>
       </button>
+      <button class="mini-banner mini-banner-battle" data-nav="battle">
+        <i data-icon="swords"></i>
+        <strong>화장 배틀</strong>
+        <span>내 vs 친구 투표</span>
+      </button>
+      <button class="mini-banner mini-banner-scan" data-nav="scanner">
+        <i data-icon="scan"></i>
+        <strong>성분 스캐너</strong>
+        <span>내 피부에 맞을까?</span>
+      </button>
       <button class="mini-banner mini-banner-rank" data-nav="ranking">
         <i data-icon="trophy"></i>
         <strong>주간 랭킹</strong>
@@ -128,7 +138,7 @@ export const GOUN_MARKUP = `
 
     <div class="player-bottom">
       <p class="player-caption" id="player-caption">"이 쿠션 하나로 끝! 완전 강추"</p>
-      <button class="buy-pill"><i data-icon="shopping-cart"></i> 쿠팡에서 바로 구매</button>
+      <button class="buy-pill"><i data-icon="shopping-cart"></i> 올리브영에서 바로 구매</button>
       <button class="btn-primary btn-block try-btn" id="try-look-btn"><i data-icon="wand"></i> 이 화장법 따라해보기</button>
     </div>
   </section>
@@ -235,6 +245,42 @@ export const GOUN_MARKUP = `
       </div>
 
       <button class="btn-primary btn-block" id="share-color-btn"><i data-icon="share"></i> 결과 공유하기</button>
+    </div>
+  </section>
+
+  <!-- ===================== 3e. MAKEUP BATTLE ===================== -->
+  <section id="view-battle" class="view">
+    <header class="sub-header">
+      <button class="icon-btn" data-nav="home"><i data-icon="chevron-left"></i></button>
+      <span>화장 배틀</span>
+      <span class="spacer"></span>
+    </header>
+
+    <div class="scroll-pad">
+      <p class="muted center">둘 중 더 잘 어울리는 화장에 투표해주세요</p>
+
+      <div class="battle-stage">
+        <button class="battle-card" id="battle-left" data-side="left">
+          <div class="battle-avatar"><i data-icon="user"></i></div>
+          <span class="battle-name">민지 🇰🇷</span>
+          <span class="battle-pct" id="battle-pct-left">52%</span>
+        </button>
+        <div class="battle-vs">VS</div>
+        <button class="battle-card" id="battle-right" data-side="right">
+          <div class="battle-avatar"><i data-icon="user"></i></div>
+          <span class="battle-name">Sakura 🇯🇵</span>
+          <span class="battle-pct" id="battle-pct-right">48%</span>
+        </button>
+      </div>
+
+      <div class="battle-bar">
+        <div class="battle-bar-fill" id="battle-bar-fill" style="width:52%"></div>
+      </div>
+      <p class="muted center small" id="battle-vote-count">1,204명 참여</p>
+
+      <button class="btn-outline btn-block" id="battle-next-btn"><i data-icon="repeat"></i> 다음 배틀 보기</button>
+      <button class="btn-outline btn-block" id="battle-share-btn"><i data-icon="share"></i> 이 배틀 공유하기</button>
+      <button class="btn-primary btn-block" id="battle-upload-btn"><i data-icon="camera"></i> 내 화장으로 배틀 만들기</button>
     </div>
   </section>
 
