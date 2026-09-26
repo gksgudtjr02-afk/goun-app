@@ -413,6 +413,9 @@ export const GOUN_MARKUP = `
         <span class="applying-pill" id="applying-pill">가상 적용 중</span>
       </div>
 
+      <h3 class="section-title" style="margin-bottom:8px;">✨ 룩 프리셋 — 한번에 적용</h3>
+      <div class="look-preset-row" id="look-preset-row"></div>
+
       <div class="search-box">
         <i data-icon="search"></i>
         <input class="search-input" id="lab-search" placeholder="제품명으로 검색 (예: 쿠션, 틴트, 세럼)">

@@ -191,6 +191,18 @@ html,body{
 .mini-banner-color{ background: linear-gradient(135deg, #FF9472, #FF5A6E); }
 .mini-banner-battle{ background: linear-gradient(135deg, #7C5CFC, #4A2FD8); }
 
+.look-preset-row{ display:flex; gap:10px; padding: 0 20px 18px; overflow-x:auto; }
+.look-preset-card{
+  flex:0 0 auto; width:148px; background:#fff; border:1px solid var(--line); border-radius: var(--radius-md);
+  padding:14px; display:flex; flex-direction:column; gap:8px; text-align:left; cursor:pointer;
+}
+.look-preset-card:active{ transform: scale(.97); }
+.look-preset-swatches{ display:flex; }
+.look-preset-swatches span{ width:26px; height:26px; border-radius:999px; border:2px solid #fff; margin-left:-9px; box-shadow: 0 0 0 1px var(--line); }
+.look-preset-swatches span:first-child{ margin-left:0; }
+.look-preset-name{ font-size:13px; font-weight:700; }
+.look-preset-desc{ font-size:11px; color: var(--ink-soft); line-height:1.45; }
+
 .chip-row{ display:flex; gap:8px; padding: 4px 20px 16px; overflow-x:auto; }
 .chip-row.no-scroll{ overflow:visible; flex-wrap:wrap; }
 .chip{

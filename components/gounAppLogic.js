@@ -73,6 +73,41 @@ const LAB_PRODUCTS_FALLBACK = [
 let LAB_PRODUCTS = LAB_PRODUCTS_FALLBACK;
 const TYPE_ICON = { lip:'droplet', base:'flask', skin:'bottle', eye:'eye', blush:'sparkles' };
 
+// Curated multi-product combos (lip+eye+blush at once). Named by style, not by a
+// real person, to avoid using anyone's likeness without their consent.
+const LOOK_PRESETS = [
+  {
+    id: 'daily-clean',
+    name: '청순 데일리 룩',
+    desc: '자연스러운 코랄 립 + 웜톤 아이 + 은은한 블러셔',
+    products: {
+      lip: { type:'lip', color:'#E0997B', brand:'고운 룩', name:'청순 데일리 립' },
+      eye: { type:'eye', color:'#B87B4A', brand:'고운 룩', name:'청순 데일리 아이' },
+      blush: { type:'blush', color:'#F4A08C', brand:'고운 룩', name:'청순 데일리 블러셔' },
+    },
+  },
+  {
+    id: 'glossy-pink',
+    name: '글로시 핑크 룩',
+    desc: '생기 있는 핑크 립 + 펄 아이 + 화사한 블러셔',
+    products: {
+      lip: { type:'lip', color:'#D4537E', brand:'고운 룩', name:'글로시 핑크 립' },
+      eye: { type:'eye', color:'#D98E6B', brand:'고운 룩', name:'글로시 핑크 아이' },
+      blush: { type:'blush', color:'#F0879C', brand:'고운 룩', name:'글로시 핑크 블러셔' },
+    },
+  },
+  {
+    id: 'warm-brown',
+    name: '웜톤 브라운 룩',
+    desc: '차분한 브라운 립 + 스모키 아이 + 로즈 블러셔',
+    products: {
+      lip: { type:'lip', color:'#7A2E3A', brand:'고운 룩', name:'웜톤 브라운 립' },
+      eye: { type:'eye', color:'#8C5A3C', brand:'고운 룩', name:'웜톤 브라운 아이' },
+      blush: { type:'blush', color:'#E58BA0', brand:'고운 룩', name:'웜톤 브라운 블러셔' },
+    },
+  },
+];
+
 const COLOR_TYPES = {
   spring:{ label:'봄 웜톤', desc:'화사하고 밝은 웜톤이에요. 생기 있고 화사한 색이 잘 어울려요.', palette:['#FF9F6B','#FFD166','#FFB4A2','#F4A259','#FFE29A'] },
   summer:{ label:'여름 쿨톤', desc:'부드럽고 차분한 쿨톤이에요. 은은하고 파스텔한 색이 잘 어울려요.', palette:['#F2A6C1','#C9B6E4','#A9C6E8','#E8C4D8','#B8D8D8'] },
@@ -426,6 +461,31 @@ export function initGounApp(root, supabase) {
     const count = Object.keys(selectedProducts).length;
     document.getElementById('lab-avatar').style.color = p.color;
     document.getElementById('applying-pill').textContent = count ? `${count}개 제품 적용 중` : '가상 적용 중';
+  }
+
+  function renderLookPresets() {
+    const row = document.getElementById('look-preset-row');
+    if (!row) return;
+    row.innerHTML = LOOK_PRESETS.map(preset => `
+      <button class="look-preset-card" data-preset="${preset.id}">
+        <span class="look-preset-swatches">
+          ${Object.values(preset.products).map(p => `<span style="background:${p.color}"></span>`).join('')}
+        </span>
+        <span class="look-preset-name">${preset.name}</span>
+        <span class="look-preset-desc">${preset.desc}</span>
+      </button>
+    `).join('');
+    row.querySelectorAll('.look-preset-card').forEach(card => {
+      const preset = LOOK_PRESETS.find(look => look.id === card.dataset.preset);
+      card.addEventListener('click', () => applyLookPreset(preset));
+    });
+  }
+
+  function applyLookPreset(preset) {
+    selectedProducts = { ...preset.products };
+    syncLabSelectionUI();
+    document.getElementById('applying-pill').textContent = preset.name;
+    openTryOn(Object.values(selectedProducts));
   }
 
   document.getElementById('lab-search')?.addEventListener('input', function () {
@@ -978,6 +1038,7 @@ export function initGounApp(root, supabase) {
   document.getElementById('bottom-nav').style.display = 'none';
   loadFeed();
   renderLabProducts();
+  renderLookPresets();
   renderColorResult('spring');
   loadProducts();
   renderRanking('look');
