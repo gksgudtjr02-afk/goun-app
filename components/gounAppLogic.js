@@ -1,4 +1,4 @@
-import { startCameraPreview, stopStream, capturePhotoWithMakeup } from './virtualTryOn';
+import { startCameraPreview, stopStream, capturePhotoWithMakeup, analyzeLookColors } from './virtualTryOn';
 
 /* ---------- Icon system: inline SVG, no external font dependency ---------- */
 const ICONS = {
@@ -1173,6 +1173,95 @@ export function initGounApp(root, supabase) {
       }
     }
   });
+
+  /* ---------- Look finder: read colors from a photo, match to our catalog ---------- */
+  const LOOKFINDER_TYPE_LABEL = { lip: '입술', eye: '눈', blush: '볼터치' };
+
+  function hexToRgb(hex) {
+    return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  }
+
+  function colorDistance(hexA, hexB) {
+    const [ra, ga, ba] = hexToRgb(hexA);
+    const [rb, gb, bb] = hexToRgb(hexB);
+    return Math.sqrt((ra - rb) ** 2 + (ga - gb) ** 2 + (ba - bb) ** 2);
+  }
+
+  function findClosestProduct(type, hex) {
+    let best = null, bestDist = Infinity;
+    LAB_PRODUCTS.filter(p => p.type === type && !p.locked).forEach(p => {
+      const d = colorDistance(hex, p.color);
+      if (d < bestDist) { bestDist = d; best = p; }
+    });
+    return best;
+  }
+
+  function renderLookfinderMatch(type, detectedHex) {
+    const label = LOOKFINDER_TYPE_LABEL[type];
+    const product = detectedHex ? findClosestProduct(type, detectedHex) : null;
+    if (!detectedHex || !product) {
+      return `<p class="muted small" style="margin-bottom:10px;">${label}: 잘 안 보여서 찾지 못했어요</p>`;
+    }
+    return `
+      <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;">
+        <span style="width:32px;height:32px;border-radius:999px;background:${detectedHex};box-shadow:0 0 0 1px var(--line);flex-shrink:0;"></span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B4ACB2" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        <span style="width:32px;height:32px;border-radius:999px;background:${product.color};flex-shrink:0;"></span>
+        <div style="flex-grow:1;min-width:0;">
+          <div style="font-size:10.5px;color:var(--ink-faint);">${label} 매칭 제품</div>
+          <div style="font-size:13px;font-weight:700;">${product.brand} · ${product.name}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function resetLookfinder() {
+    document.getElementById('lookfinder-upload')?.classList.remove('hidden');
+    document.getElementById('lookfinder-loading')?.classList.add('hidden');
+    document.getElementById('lookfinder-result')?.classList.add('hidden');
+    const fileInput = document.getElementById('lookfinder-file-input');
+    if (fileInput) fileInput.value = '';
+  }
+
+  document.getElementById('lookfinder-file-input')?.addEventListener('change', function () {
+    const file = this.files?.[0];
+    if (!file) return;
+
+    document.getElementById('lookfinder-upload')?.classList.add('hidden');
+    document.getElementById('lookfinder-loading')?.classList.remove('hidden');
+
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = async () => {
+      try {
+        const colors = await analyzeLookColors(img);
+        document.getElementById('lookfinder-loading')?.classList.add('hidden');
+        if (!colors.faceFound) {
+          showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
+          resetLookfinder();
+          return;
+        }
+        const previewImg = document.getElementById('lookfinder-preview-img');
+        if (previewImg) previewImg.src = url;
+        const matches = document.getElementById('lookfinder-matches');
+        if (matches) {
+          matches.innerHTML = ['lip', 'eye', 'blush'].map(type => renderLookfinderMatch(type, colors[type])).join('');
+        }
+        document.getElementById('lookfinder-result')?.classList.remove('hidden');
+      } catch (err) {
+        console.error('[lookfinder] analyze-error', err);
+        showToast('분석에 실패했어요. 다시 시도해주세요');
+        resetLookfinder();
+      }
+    };
+    img.onerror = () => {
+      showToast('사진을 불러오지 못했어요');
+      resetLookfinder();
+    };
+    img.src = url;
+  });
+
+  document.getElementById('lookfinder-retry-btn')?.addEventListener('click', resetLookfinder);
 
   /* ---------- Advertising: inquiry & self-serve ---------- */
   let adSlot = 'feed', adDuration = 7;

@@ -241,3 +241,80 @@ export async function capturePhotoWithMakeup(video, products) {
   }
   return { canvas, faceFound: !!face };
 }
+
+/* ---------- Look analysis: read the colors already in a photo, instead of drawing new ones ---------- */
+
+function boundingBox(points) {
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+}
+
+function averageColorInBox(ctx, canvasW, canvasH, box) {
+  const x = Math.max(0, Math.min(canvasW - 1, Math.round(box.minX)));
+  const y = Math.max(0, Math.min(canvasH - 1, Math.round(box.minY)));
+  const w = Math.max(1, Math.min(canvasW - x, Math.round(box.maxX - box.minX)));
+  const h = Math.max(1, Math.min(canvasH - y, Math.round(box.maxY - box.minY)));
+  const { data } = ctx.getImageData(x, y, w, h);
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    r += data[i]; g += data[i + 1]; b += data[i + 2]; n++;
+  }
+  if (!n) return null;
+  const toHex = (v) => Math.round(v / n).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function mixHex(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  const toRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const [ra, ga, ba] = toRgb(a);
+  const [rb, gb, bb] = toRgb(b);
+  const toHex = (v) => Math.round(v).toString(16).padStart(2, '0');
+  return `#${toHex((ra + rb) / 2)}${toHex((ga + gb) / 2)}${toHex((ba + bb) / 2)}`;
+}
+
+/**
+ * Given an already-loaded <img> (a photo the user picked — their own selfie or
+ * someone else's, e.g. a celebrity's look), finds a face and reads back the
+ * actual lip / eye / cheek colors in the photo. Returns hex colors, not a
+ * rendered image — callers match these against a product catalog themselves.
+ */
+export async function analyzeLookColors(imageEl) {
+  const w = imageEl.naturalWidth || imageEl.width;
+  const h = imageEl.naturalHeight || imageEl.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(imageEl, 0, 0, w, h);
+
+  const landmarker = await getFaceLandmarker();
+  const result = landmarker.detect(canvas);
+  const face = result?.faceLandmarks?.[0];
+  if (!face) return { faceFound: false };
+
+  const lipBox = boundingBox(LIPS_OUTER.map((i) => toPoint(face, i, w, h)));
+  const lipColor = averageColorInBox(ctx, w, h, lipBox);
+
+  const rEyePts = EYE_RIGHT_UPPER.map((i) => toPoint(face, i, w, h));
+  const lEyePts = EYE_LEFT_UPPER.map((i) => toPoint(face, i, w, h));
+  const eyeWidth = Math.hypot(rEyePts[rEyePts.length - 1].x - rEyePts[0].x, rEyePts[rEyePts.length - 1].y - rEyePts[0].y);
+  const lift = Math.max(6, eyeWidth * 0.25);
+  const rEyeBox = boundingBox(rEyePts.map((p) => ({ x: p.x, y: p.y - lift })));
+  const lEyeBox = boundingBox(lEyePts.map((p) => ({ x: p.x, y: p.y - lift })));
+  const eyeColor = mixHex(averageColorInBox(ctx, w, h, rEyeBox), averageColorInBox(ctx, w, h, lEyeBox));
+
+  const rCorner = toPoint(face, MOUTH_CORNER_R, w, h);
+  const lCorner = toPoint(face, MOUTH_CORNER_L, w, h);
+  const rEyeOuter = toPoint(face, EYE_OUTER_R, w, h);
+  const lEyeOuter = toPoint(face, EYE_OUTER_L, w, h);
+  const cheekSize = Math.max(10, eyeWidth * 0.35);
+  const rCheek = { x: (rEyeOuter.x + rCorner.x) / 2, y: (rEyeOuter.y + rCorner.y) / 2 };
+  const lCheek = { x: (lEyeOuter.x + lCorner.x) / 2, y: (lEyeOuter.y + lCorner.y) / 2 };
+  const cheekBox = (c) => ({ minX: c.x - cheekSize / 2, maxX: c.x + cheekSize / 2, minY: c.y - cheekSize / 2, maxY: c.y + cheekSize / 2 });
+  const blushColor = mixHex(averageColorInBox(ctx, w, h, cheekBox(rCheek)), averageColorInBox(ctx, w, h, cheekBox(lCheek)));
+
+  return { faceFound: true, lip: lipColor, eye: eyeColor, blush: blushColor };
+}
