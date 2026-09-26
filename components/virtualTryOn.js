@@ -73,10 +73,11 @@ function drawLips(ctx, landmarks, w, h, color) {
   const width = Math.hypot(lCorner.x - rCorner.x, lCorner.y - rCorner.y);
   const blurPx = Math.min(6, Math.max(1.5, width * 0.05));
 
-  // Base tint: blurred edges so it blends into skin instead of a hard outline.
+  // Base tint: 'color' blend keeps the lips' own shading/highlights and only
+  // swaps the hue, so it reads as makeup rather than a flat paint fill.
   ctx.save();
-  ctx.globalCompositeOperation = 'multiply';
-  ctx.globalAlpha = 0.55;
+  ctx.globalCompositeOperation = 'color';
+  ctx.globalAlpha = 0.8;
   ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = color;
   ctx.fill(combined, 'evenodd');
@@ -120,8 +121,8 @@ function drawEyeshadowSide(ctx, landmarks, w, h, color, upperIndices) {
   const blurPx = Math.min(5, Math.max(1.5, eyeWidth * 0.06));
 
   ctx.save();
-  ctx.globalCompositeOperation = 'multiply';
-  ctx.globalAlpha = 0.45;
+  ctx.globalCompositeOperation = 'color';
+  ctx.globalAlpha = 0.65;
   ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = gradient;
   ctx.fill(path);
@@ -145,8 +146,8 @@ function drawBlushSide(ctx, landmarks, w, h, color, eyeCornerIdx, mouthCornerIdx
   gradient.addColorStop(1, 'rgba(255,255,255,0)');
   const blurPx = Math.min(8, Math.max(2, radius * 0.15));
   ctx.save();
-  ctx.globalCompositeOperation = 'multiply';
-  ctx.globalAlpha = 0.35;
+  ctx.globalCompositeOperation = 'color';
+  ctx.globalAlpha = 0.55;
   ctx.filter = `blur(${blurPx}px)`;
   ctx.fillStyle = gradient;
   ctx.beginPath();
@@ -192,11 +193,15 @@ function drawForProduct(ctx, landmarks, w, h, product) {
 
 /** Opens the front camera and attaches it to the given <video>. Returns the MediaStream. */
 export async function startCameraPreview(video) {
+  // No hard min/ideal aspect: forcing a tall 9:16 resolution makes some phones
+  // digitally crop (zoom into) the sensor to satisfy it. A modest, unconstrained
+  // request lets the browser use the camera's natural field of view.
   const stream = await navigator.mediaDevices.getUserMedia({
     video: {
       facingMode: 'user',
-      width: { ideal: 1080, min: 720 },
-      height: { ideal: 1920, min: 1280 },
+      width: { ideal: 960 },
+      height: { ideal: 960 },
+      resizeMode: 'none',
     },
     audio: false,
   });

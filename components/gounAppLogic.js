@@ -254,9 +254,9 @@ export function initGounApp(root, supabase) {
   });
 
   /* ---------- Virtual Lab: product search & select ---------- */
-  let selectedProduct = null;
+  let selectedProducts = {}; // type -> product, so lip+eye+blush can be combined
   let tryOnStream = null;
-  let tryOnProduct = null;
+  let tryOnProducts = [];
 
   function showTryOnLive() {
     document.getElementById('tryon-video')?.classList.remove('hidden');
@@ -269,19 +269,21 @@ export function initGounApp(root, supabase) {
     document.getElementById('tryon-modal')?.classList.remove('show');
     stopStream(tryOnStream);
     tryOnStream = null;
-    tryOnProduct = null;
+    tryOnProducts = [];
     showTryOnLive();
   }
 
-  async function openTryOn(product) {
+  async function openTryOn(products) {
     const modal = document.getElementById('tryon-modal');
     const video = document.getElementById('tryon-video');
     const statusEl = document.getElementById('tryon-status');
     const pill = document.getElementById('tryon-product-pill');
     if (!modal || !video) return;
 
-    tryOnProduct = product;
-    pill.textContent = `${product.brand} · ${product.name}`;
+    tryOnProducts = products;
+    pill.textContent = products.length === 1
+      ? `${products[0].brand} · ${products[0].name}`
+      : `${products.length}개 제품 동시 적용`;
     statusEl.textContent = '카메라를 준비하고 있어요...';
     statusEl.classList.remove('error');
     showTryOnLive();
@@ -309,12 +311,12 @@ export function initGounApp(root, supabase) {
     const video = document.getElementById('tryon-video');
     const resultCanvas = document.getElementById('tryon-result');
     const statusEl = document.getElementById('tryon-status');
-    if (!video || !resultCanvas || !tryOnProduct) return;
+    if (!video || !resultCanvas || !tryOnProducts.length) return;
 
     statusEl.textContent = 'AI가 화장을 입히고 있어요...';
     statusEl.classList.remove('error');
     try {
-      const { canvas, faceFound } = await capturePhotoWithMakeup(video, tryOnProduct);
+      const { canvas, faceFound } = await capturePhotoWithMakeup(video, tryOnProducts);
       resultCanvas.width = canvas.width;
       resultCanvas.height = canvas.height;
       resultCanvas.getContext('2d').drawImage(canvas, 0, 0);
@@ -361,6 +363,7 @@ export function initGounApp(root, supabase) {
     filtered.forEach(p => {
       const btn = document.createElement('button');
       btn.className = 'product-item' + (p.locked ? ' locked' : '');
+      btn.dataset.name = p.name;
       const inWishlist = wishlist.some(w => w.name === p.name);
       btn.innerHTML = `
         <span class="product-thumb" style="background:linear-gradient(145deg, ${p.color}, ${p.color}cc)">
@@ -388,6 +391,22 @@ export function initGounApp(root, supabase) {
       list.appendChild(btn);
     });
     paintIcons(list);
+    syncLabSelectionUI();
+  }
+
+  function syncLabSelectionUI() {
+    const selectedNames = new Set(Object.values(selectedProducts).map(p => p.name));
+    document.querySelectorAll('#lab-products .product-item').forEach(el => {
+      const isSelected = selectedNames.has(el.dataset.name);
+      el.classList.toggle('selected', isSelected);
+      const chk = el.querySelector('.check-icon');
+      if (chk) chk.style.visibility = isSelected ? 'visible' : 'hidden';
+    });
+    const count = Object.keys(selectedProducts).length;
+    document.getElementById('buy-selected-btn').classList.toggle('hidden', count === 0);
+    const tryBtn = document.getElementById('try-selected-btn');
+    tryBtn.innerHTML = `<i data-icon="camera"></i> ${count > 1 ? `발라보기 (${count}개 동시 적용)` : '발라보기 (카메라 켜기)'}`;
+    paintIcons(tryBtn);
   }
 
   function selectLabProduct(p, btn) {
@@ -395,19 +414,18 @@ export function initGounApp(root, supabase) {
       document.getElementById('lock-modal').classList.add('show');
       return;
     }
-    document.querySelectorAll('.product-item').forEach(el => {
-      el.classList.remove('selected');
-      const chk = el.querySelector('.check-icon');
-      if (chk) chk.style.visibility = 'hidden';
-    });
-    btn.classList.add('selected');
-    const chk = btn.querySelector('.check-icon');
-    if (chk) chk.style.visibility = 'visible';
+    // Tapping a product toggles it within its own category (lip/eye/blush/base),
+    // so several categories can be combined but only one shade per category at a time.
+    if (selectedProducts[p.type]?.name === p.name) {
+      delete selectedProducts[p.type];
+    } else {
+      selectedProducts[p.type] = p;
+    }
+    syncLabSelectionUI();
 
-    selectedProduct = p;
+    const count = Object.keys(selectedProducts).length;
     document.getElementById('lab-avatar').style.color = p.color;
-    document.getElementById('applying-pill').textContent = `${p.brand} 적용 중`;
-    document.getElementById('buy-selected-btn').classList.remove('hidden');
+    document.getElementById('applying-pill').textContent = count ? `${count}개 제품 적용 중` : '가상 적용 중';
   }
 
   document.getElementById('lab-search')?.addEventListener('input', function () {
@@ -422,11 +440,13 @@ export function initGounApp(root, supabase) {
     });
   });
   document.getElementById('try-selected-btn')?.addEventListener('click', () => {
-    if (!selectedProduct) { showToast('먼저 제품을 선택해주세요'); return; }
-    openTryOn(selectedProduct);
+    const products = Object.values(selectedProducts);
+    if (!products.length) { showToast('먼저 제품을 선택해주세요'); return; }
+    openTryOn(products);
   });
   document.getElementById('buy-selected-btn')?.addEventListener('click', () => {
-    showToast(`올리브영에서 ${selectedProduct.name} 구매 페이지로 이동해요`);
+    const names = Object.values(selectedProducts).map(p => p.name).join(', ');
+    showToast(`올리브영에서 ${names} 구매 페이지로 이동해요`);
   });
   document.getElementById('modal-dismiss')?.addEventListener('click', () => document.getElementById('lock-modal').classList.remove('show'));
   document.getElementById('modal-upgrade')?.addEventListener('click', () => document.getElementById('lock-modal').classList.remove('show'));
