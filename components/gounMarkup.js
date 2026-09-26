@@ -413,8 +413,10 @@ export const GOUN_MARKUP = `
         <span class="applying-pill" id="applying-pill">가상 적용 중</span>
       </div>
 
-      <h3 class="section-title" style="margin-bottom:8px;">✨ 룩 프리셋 — 한번에 적용</h3>
-      <div class="look-preset-row" id="look-preset-row"></div>
+      <div id="look-preset-section" class="hidden">
+        <h3 class="section-title" style="margin-bottom:8px;">✨ 룩 프리셋 — 한번에 적용</h3>
+        <div class="look-preset-row" id="look-preset-row"></div>
+      </div>
 
       <div class="search-box">
         <i data-icon="search"></i>
@@ -434,7 +436,7 @@ export const GOUN_MARKUP = `
     </div>
 
     <div class="lab-action-bar">
-      <button class="btn-primary btn-block" id="try-selected-btn"><i data-icon="camera"></i> 발라보기 (카메라 켜기)</button>
+      <button class="btn-primary btn-block hidden" id="try-selected-btn"><i data-icon="camera"></i> 발라보기 (카메라 켜기)</button>
       <button class="btn-secondary btn-block hidden" id="buy-selected-btn">이 제품 구매하러 가기</button>
     </div>
   </section>
