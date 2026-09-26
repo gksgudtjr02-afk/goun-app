@@ -41,7 +41,8 @@ const ICONS = {
   'scan':'<path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/>',
   'trophy':'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0z"/><path d="M17 5h3a2 2 0 01-2 4M7 5H4a2 2 0 002 4"/>',
   'alert':'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>',
-  'log-out':'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>'
+  'log-out':'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  'eye':'<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>'
 };
 
 /* ---------- Feed data: loaded from Supabase, with a mock fallback ---------- */
@@ -62,9 +63,15 @@ const LAB_PRODUCTS_FALLBACK = [
   {brand:'롬앤', name:'쥬시 래스팅 틴트', price:'10,800원', color:'#C64E6B', type:'lip', locked:true},
   {brand:'3CE', name:'벨벳 립 틴트', price:'19,000원', color:'#7A2E3A', type:'lip', locked:true},
   {brand:'이니스프리', name:'노세범 쿠션', price:'18,000원', color:'#E8C9A8', type:'base', locked:true},
+  {brand:'페리페라', name:'글리터 아이 섀도우 브론즈', price:'11,000원', color:'#B87B4A', type:'eye', locked:false},
+  {brand:'클리오', name:'프로 아이 팔레트 코랄', price:'22,000원', color:'#D98E6B', type:'eye', locked:true},
+  {brand:'에뛰드', name:'플레이 컬러 아이즈 브라운', price:'13,500원', color:'#8C5A3C', type:'eye', locked:true},
+  {brand:'롬앤', name:'글래스팅 워터 블러셔 코랄', price:'9,500원', color:'#F0879C', type:'blush', locked:false},
+  {brand:'에뛰드', name:'블러셔 포켓 피치', price:'8,500원', color:'#F4A08C', type:'blush', locked:true},
+  {brand:'이니스프리', name:'미네랄 블러셔 로즈', price:'12,000원', color:'#E58BA0', type:'blush', locked:true},
 ];
 let LAB_PRODUCTS = LAB_PRODUCTS_FALLBACK;
-const TYPE_ICON = { lip:'droplet', base:'flask', skin:'bottle' };
+const TYPE_ICON = { lip:'droplet', base:'flask', skin:'bottle', eye:'eye', blush:'sparkles' };
 
 const COLOR_TYPES = {
   spring:{ label:'봄 웜톤', desc:'화사하고 밝은 웜톤이에요. 생기 있고 화사한 색이 잘 어울려요.', palette:['#FF9F6B','#FFD166','#FFB4A2','#F4A259','#FFE29A'] },
@@ -256,7 +263,8 @@ export function initGounApp(root, supabase) {
     searching: '얼굴을 화면 중앙에 맞춰주세요',
     running: '',
     'no-face': '얼굴이 잘 안 보여요. 화면 중앙을 봐주세요',
-    error: '카메라를 사용할 수 없어요. 권한을 확인해주세요',
+    'camera-error': '카메라를 사용할 수 없어요. 브라우저 설정에서 카메라 권한을 허용해주세요',
+    'model-error': 'AI 모델을 불러오지 못했어요. 인터넷 연결을 확인하고 다시 시도해주세요',
   };
 
   async function closeTryOn() {
@@ -291,10 +299,11 @@ export function initGounApp(root, supabase) {
       video,
       canvas,
       product,
-      onStatus: (status) => {
+      onStatus: (status, err) => {
+        if (err) console.error('[tryon]', status, err);
         if (!document.getElementById('tryon-modal')?.classList.contains('show')) return;
         statusEl.textContent = TRYON_STATUS_TEXT[status] ?? '';
-        statusEl.classList.toggle('error', status === 'error');
+        statusEl.classList.toggle('error', status.endsWith('-error'));
       },
     });
   }
@@ -311,11 +320,14 @@ export function initGounApp(root, supabase) {
     renderColorResult(currentColorType);
   }
 
+  let labTypeFilter = 'all';
+
   function renderLabProducts(keyword = '') {
     const list = document.getElementById('lab-products');
     if (!list) return;
     list.innerHTML = '';
     const filtered = LAB_PRODUCTS.filter(p =>
+      (labTypeFilter === 'all' || p.type === labTypeFilter) &&
       (p.brand + p.name).toLowerCase().includes(keyword.toLowerCase())
     );
     filtered.forEach(p => {
@@ -372,6 +384,14 @@ export function initGounApp(root, supabase) {
 
   document.getElementById('lab-search')?.addEventListener('input', function () {
     renderLabProducts(this.value);
+  });
+  document.querySelectorAll('#lab-type-chips .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#lab-type-chips .chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      labTypeFilter = chip.getAttribute('data-lab-type');
+      renderLabProducts(document.getElementById('lab-search')?.value || '');
+    });
   });
   document.getElementById('try-selected-btn')?.addEventListener('click', () => {
     if (!selectedProduct) { showToast('먼저 제품을 선택해주세요'); return; }

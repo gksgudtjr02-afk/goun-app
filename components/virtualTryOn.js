@@ -172,7 +172,7 @@ export async function startVirtualTryOn({ video, canvas, product, onStatus }) {
       audio: false,
     });
   } catch (err) {
-    onStatus?.('error', err);
+    onStatus?.('camera-error', err);
     return async () => {};
   }
 
@@ -190,7 +190,7 @@ export async function startVirtualTryOn({ video, canvas, product, onStatus }) {
     landmarker = await getFaceLandmarker();
   } catch (err) {
     stream.getTracks().forEach((tr) => tr.stop());
-    onStatus?.('error', err);
+    onStatus?.('model-error', err);
     return async () => {};
   }
 

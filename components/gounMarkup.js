@@ -418,6 +418,14 @@ export const GOUN_MARKUP = `
         <input class="search-input" id="lab-search" placeholder="제품명으로 검색 (예: 쿠션, 틴트, 세럼)">
       </div>
 
+      <div class="chip-row no-scroll" id="lab-type-chips">
+        <button class="chip active" data-lab-type="all">전체</button>
+        <button class="chip" data-lab-type="lip">입술</button>
+        <button class="chip" data-lab-type="eye">눈</button>
+        <button class="chip" data-lab-type="blush">볼터치</button>
+        <button class="chip" data-lab-type="base">베이스</button>
+      </div>
+
       <div class="product-select-list" id="lab-products"></div>
 
       <button class="btn-primary btn-block hidden" id="buy-selected-btn">이 제품 구매하러 가기</button>
