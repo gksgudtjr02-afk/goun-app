@@ -10,8 +10,10 @@
 
 `components/virtualTryOn.js` (MediaPipe FaceLandmarker 기반, 무료)로 얼굴 사진에 립/아이/블러셔 색을 입히는 기능을 만들었지만, 사용자가 실제 폰으로 테스트해보고 "퀄리티가 너무 허접하다"고 판단해서 **뷰티랩 화면의 진입점(발라보기 버튼, 룩 프리셋 섹션)을 `hidden` 클래스로 숨겨뒀음** (코드는 그대로 남겨둠, `components/gounMarkup.js`에서 `#try-selected-btn`과 `#look-preset-section`에 `hidden` 클래스만 추가한 상태).
 
+**결론 확정됨**: 버그(여러 제품 배열 처리 오류)를 고치고, color 블렌드 모드 + 진한 채도로 제대로 다시 테스트했는데도 사용자가 "아닌 것 같다"고 판단함. 즉 MediaPipe 랜드마크 + 캔버스 색칠 방식 자체의 한계로 결론 남 (단순 버그가 아님). 더 이상 이 방식으로 화질 개선 시도하지 말 것.
+
 다음에 이걸 다시 켜려면:
 1. Perfect Corp YouCam API(유료, 월 $24~32부터, docs.perfectcorp.com) 같은 상용 AI 서비스로 교체해서 퀄리티를 올리거나
-2. 지금 무료 버전을 그대로 다시 노출하고 싶다면 위 두 `hidden` 클래스만 제거하면 됨
+2. 지금 무료 버전을 그대로 다시 노출하고 싶다면 `components/gounMarkup.js`의 `#try-selected-btn`과 `#look-preset-section`에서 `hidden` 클래스만 제거하면 됨
 
 사용자가 유료 API로 전환할지 결정하기 전까지는 계속 숨겨둘 것.
