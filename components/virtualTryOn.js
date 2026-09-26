@@ -207,7 +207,12 @@ export async function startVirtualTryOn({ video, canvas, product, onStatus }) {
   try {
     onStatus?.('camera');
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 1280 } },
+      video: {
+        facingMode: 'user',
+        width: { ideal: 1080, min: 720 },
+        height: { ideal: 1920, min: 1280 },
+        frameRate: { ideal: 30 },
+      },
       audio: false,
     });
   } catch (err) {
