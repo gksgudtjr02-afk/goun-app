@@ -63,7 +63,7 @@ export const GOUN_MARKUP = `
       <input class="search-input" id="feed-search-input" placeholder="크리에이터, 캡션으로 검색">
     </div>
 
-    <button class="weather-strip" data-nav="touchup">
+    <button class="weather-strip hidden" data-nav="touchup">
       <i data-icon="cloud"></i>
       <span><strong>서울 미세먼지 나쁨</strong> · 오전 룩, 지금 상태 체크하기</span>
       <i data-icon="chevron-right" class="chev"></i>
@@ -139,7 +139,7 @@ export const GOUN_MARKUP = `
     <header class="sub-header">
       <button class="icon-btn" data-nav="home"><i data-icon="chevron-left"></i></button>
       <span>AI 스킨체크</span>
-      <button class="icon-btn" data-nav="touchup" aria-label="화장 고치기"><i data-icon="repeat"></i></button>
+      <span class="spacer"></span>
     </header>
 
     <div class="camera-stage">
@@ -201,7 +201,7 @@ export const GOUN_MARKUP = `
         <div class="product-card"><div class="product-icon"><i data-icon="bottle"></i></div><span>에뛰드하우스<br>블러 프라이머</span></div>
       </div>
 
-      <button class="btn-secondary btn-block" id="save-look-btn"><i data-icon="bookmark"></i> 오늘 룩 저장하기</button>
+      <button class="btn-secondary btn-block hidden" id="save-look-btn"><i data-icon="bookmark"></i> 오늘 룩 저장하기</button>
       <button class="btn-primary btn-block hidden" id="check-now-btn" data-nav="touchup"><i data-icon="repeat"></i> 지금 상태 비교하기</button>
       <button class="btn-outline btn-block" data-nav="color"><i data-icon="palette"></i> 퍼스널 컬러 진단 보기</button>
       <button class="btn-outline btn-block" data-nav="camera">다시 촬영하기</button>
