@@ -465,11 +465,8 @@ export const GOUN_MARKUP = `
       </div>
 
       <div id="lookfinder-step2" class="hidden">
-        <p class="muted" style="margin-bottom:16px;">좋아요! 이제 내 사진을 올리면, 이 화장을 내 얼굴에 입혀서 비교해드려요.</p>
-        <label class="btn-primary btn-block" for="lookfinder-selfie-input" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-          <i data-icon="camera"></i> 내 사진 선택하기
-        </label>
-        <input type="file" accept="image/*" capture="user" id="lookfinder-selfie-input" class="hidden">
+        <p class="muted" style="margin-bottom:16px;">좋아요! 이제 내 사진을 찍으면, 이 화장을 내 얼굴에 입혀서 비교해드려요.</p>
+        <button class="btn-primary btn-block" id="lookfinder-selfie-btn"><i data-icon="camera"></i> 내 사진 촬영하기</button>
       </div>
 
       <div id="lookfinder-loading" class="hidden center" style="padding:60px 0;">
@@ -789,17 +786,17 @@ export const GOUN_MARKUP = `
     </div>
   </div>
 
-  <!-- ===================== TOUCH-UP CHECK CAMERA (in-page, avoids leaving to native camera app) ===================== -->
-  <div id="touchup-camera-modal" class="modal-backdrop tryon-backdrop">
+  <!-- ===================== SHARED IN-PAGE PHOTO CAMERA (avoids leaving to native camera app) ===================== -->
+  <div id="photo-camera-modal" class="modal-backdrop tryon-backdrop">
     <div class="tryon-stage">
-      <video id="touchup-camera-video" class="tryon-video" playsinline muted autoplay></video>
+      <video id="photo-camera-video" class="tryon-video" playsinline muted autoplay></video>
       <div class="tryon-top">
-        <span class="tryon-product-pill" id="touchup-camera-title">오늘 룩 저장</span>
-        <button class="tryon-close-btn" id="touchup-camera-close-btn" aria-label="닫기"><i data-icon="x"></i></button>
+        <span class="tryon-product-pill" id="photo-camera-title">사진 촬영</span>
+        <button class="tryon-close-btn" id="photo-camera-close-btn" aria-label="닫기"><i data-icon="x"></i></button>
       </div>
-      <div class="tryon-status" id="touchup-camera-status">카메라를 준비하고 있어요...</div>
-      <div class="tryon-bottom" id="touchup-camera-shutter-wrap">
-        <button class="tryon-shutter-btn" id="touchup-camera-shutter-btn" aria-label="촬영하기"></button>
+      <div class="tryon-status" id="photo-camera-status">카메라를 준비하고 있어요...</div>
+      <div class="tryon-bottom" id="photo-camera-shutter-wrap">
+        <button class="tryon-shutter-btn" id="photo-camera-shutter-btn" aria-label="촬영하기"></button>
       </div>
     </div>
   </div>

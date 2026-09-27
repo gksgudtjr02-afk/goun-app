@@ -443,19 +443,23 @@ export function initGounApp(root, supabase) {
     }
   }
 
-  /* ---------- Touch-up check: in-page camera modal (shared by save & now capture) ---------- */
-  let touchupCameraStream = null;
-  let touchupCameraMode = null; // 'save' | 'now'
+  /* ---------- Shared in-page photo camera: used by touch-up check AND 인플루언서 화장법 selfie capture.
+     Opens getUserMedia directly inside the page instead of a file-input capture (which hands off to the
+     native camera app and, on some Android phones, gets the tab reloaded while backgrounded — see the
+     touch-up "camera bug" note in CLAUDE.md). Callback-based: openPhotoCamera(title, onCapture) shows the
+     modal, and onCapture(canvas) is called once with the captured (mirrored) frame after the shutter. ---------- */
+  let photoCameraStream = null;
+  let photoCameraOnCapture = null;
 
-  async function openTouchupCamera(mode) {
-    touchupCameraMode = mode;
-    const modal = document.getElementById('touchup-camera-modal');
-    const video = document.getElementById('touchup-camera-video');
-    const statusEl = document.getElementById('touchup-camera-status');
-    const title = document.getElementById('touchup-camera-title');
+  async function openPhotoCamera(title, onCapture) {
+    photoCameraOnCapture = onCapture;
+    const modal = document.getElementById('photo-camera-modal');
+    const video = document.getElementById('photo-camera-video');
+    const statusEl = document.getElementById('photo-camera-status');
+    const titleEl = document.getElementById('photo-camera-title');
     if (!modal || !video) return;
 
-    if (title) title.textContent = mode === 'save' ? '오늘 룩 저장' : '지금 사진 찍기';
+    if (titleEl) titleEl.textContent = title;
     statusEl.textContent = '카메라를 준비하고 있어요...';
     statusEl.classList.remove('error');
     modal.classList.add('show');
@@ -467,28 +471,26 @@ export function initGounApp(root, supabase) {
     }
 
     try {
-      touchupCameraStream = await startCameraPreview(video);
+      photoCameraStream = await startCameraPreview(video);
       statusEl.textContent = '얼굴이 잘 보이게 맞추고 촬영해주세요';
     } catch (err) {
-      console.error('[touchup] camera-error', err);
+      console.error('[photo-camera] camera-error', err);
       statusEl.textContent = '카메라를 사용할 수 없어요. 브라우저 설정에서 카메라 권한을 허용해주세요';
       statusEl.classList.add('error');
     }
   }
 
-  function closeTouchupCamera() {
-    document.getElementById('touchup-camera-modal')?.classList.remove('show');
-    stopStream(touchupCameraStream);
-    touchupCameraStream = null;
+  function closePhotoCamera() {
+    document.getElementById('photo-camera-modal')?.classList.remove('show');
+    stopStream(photoCameraStream);
+    photoCameraStream = null;
   }
 
-  document.getElementById('save-look-btn')?.addEventListener('click', () => openTouchupCamera('save'));
-  document.getElementById('touchup-now-btn')?.addEventListener('click', () => openTouchupCamera('now'));
-  document.getElementById('touchup-camera-close-btn')?.addEventListener('click', closeTouchupCamera);
+  document.getElementById('photo-camera-close-btn')?.addEventListener('click', closePhotoCamera);
 
-  document.getElementById('touchup-camera-shutter-btn')?.addEventListener('click', async () => {
-    const video = document.getElementById('touchup-camera-video');
-    if (!video || !touchupCameraStream) return;
+  document.getElementById('photo-camera-shutter-btn')?.addEventListener('click', async () => {
+    const video = document.getElementById('photo-camera-video');
+    if (!video || !photoCameraStream) return;
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
@@ -499,12 +501,13 @@ export function initGounApp(root, supabase) {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-    const mode = touchupCameraMode;
-    closeTouchupCamera();
-
-    if (mode === 'save') await handleTouchupSaveCapture(canvas);
-    else await handleTouchupNowCapture(canvas);
+    const onCapture = photoCameraOnCapture;
+    closePhotoCamera();
+    if (onCapture) await onCapture(canvas);
   });
+
+  document.getElementById('save-look-btn')?.addEventListener('click', () => openPhotoCamera('오늘 룩 저장', handleTouchupSaveCapture));
+  document.getElementById('touchup-now-btn')?.addEventListener('click', () => openPhotoCamera('지금 사진 찍기', handleTouchupNowCapture));
 
   document.getElementById('touchup-retry-btn')?.addEventListener('click', () => {
     setTouchupNowError('');
@@ -1478,9 +1481,7 @@ export function initGounApp(root, supabase) {
     lookfinderRefUrl = null;
     showLookfinderStep('step1');
     const refInput = document.getElementById('lookfinder-ref-input');
-    const selfieInput = document.getElementById('lookfinder-selfie-input');
     if (refInput) refInput.value = '';
-    if (selfieInput) selfieInput.value = '';
   }
 
   function loadImage(url) {
@@ -1518,20 +1519,21 @@ export function initGounApp(root, supabase) {
     }
   });
 
-  document.getElementById('lookfinder-selfie-input')?.addEventListener('change', async function () {
-    const file = this.files?.[0];
-    if (!file || !lookfinderColors) return;
-
+  document.getElementById('lookfinder-selfie-btn')?.addEventListener('click', () => {
+    if (!lookfinderColors) return;
     if (!currentUserId) {
       showToast('로그인 후 이용해주세요');
-      this.value = '';
       return;
     }
+    openPhotoCamera('내 사진 촬영', handleLookfinderSelfieCapture);
+  });
+
+  async function handleLookfinderSelfieCapture(canvas) {
+    if (!lookfinderColors || !currentUserId) return;
 
     const ticket = await consumeAiTicket(currentUserId);
     if (!ticket.ok) {
       showToast(`무료 체험을 다 썼고 포인트도 부족해요 (${ticket.pointsNeeded}P 더 필요). 친구를 초대하면 포인트를 받을 수 있어요!`);
-      this.value = '';
       goTo('mypage');
       return;
     }
@@ -1540,16 +1542,14 @@ export function initGounApp(root, supabase) {
     document.getElementById('lookfinder-loading-text').textContent = '내 얼굴에 화장을 입히고 있어요...';
 
     try {
-      const url = URL.createObjectURL(file);
-      const img = await loadImage(url);
-      const { canvas, faceFound } = await applyDetectedLook(img, lookfinderColors);
+      const { canvas: resultCanvas, faceFound } = await applyDetectedLook(canvas, lookfinderColors);
       if (!faceFound) {
-        showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
+        showToast('사진에서 얼굴을 찾지 못했어요. 다시 촬영해주세요');
         showLookfinderStep('step2');
         return;
       }
       document.getElementById('lookfinder-ref-img').src = lookfinderRefUrl;
-      document.getElementById('lookfinder-selfie-img').src = canvas.toDataURL('image/jpeg', 0.92);
+      document.getElementById('lookfinder-selfie-img').src = resultCanvas.toDataURL('image/jpeg', 0.92);
       const matches = document.getElementById('lookfinder-matches');
       if (matches) {
         matches.innerHTML = ['lip', 'eye', 'blush'].map(type => renderLookfinderMatch(type, lookfinderColors[type])).join('');
@@ -1566,7 +1566,7 @@ export function initGounApp(root, supabase) {
       showToast('적용에 실패했어요. 다시 시도해주세요');
       showLookfinderStep('step2');
     }
-  });
+  }
 
   document.getElementById('lookfinder-share-btn')?.addEventListener('click', () => {
     shareContent('고운에서 인플루언서 화장법 따라해봤어요', '나도 이 룩 따라할 수 있을까? 고운에서 비슷한 제품도 바로 찾아줘요 ✨ #고운 #GOUN');
