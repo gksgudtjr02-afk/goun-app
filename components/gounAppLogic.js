@@ -1677,7 +1677,9 @@ export function initGounApp(root, supabase) {
   let lookfinderMask = null; // segmentPerson() 결과 캐시 — 배경 프리셋끼리 전환할 때 매번 다시 분석하지 않도록
 
   // 배경 프리셋: 10~20대 타깃이라 톤다운된 파스텔보다 또렷하고 화사한 그라데이션으로.
+  // 흰색은 단일 색(그라데이션 없음) — 배열에 색 1개만 넣으면 단색으로 처리됨.
   const LOOKFINDER_BG_PRESETS = {
+    white: ['#FFFFFF'],
     coral: ['#FF4D6D', '#7C5CFC'],
     purple: ['#B39DFF', '#5E3FE0'],
     mint: ['#3DE8C0', '#5B8DEF'],
@@ -1815,16 +1817,26 @@ export function initGounApp(root, supabase) {
         if (!lookfinderMask) {
           lookfinderMask = await withTimeout(segmentPerson(lookfinderBaseCanvas), 15000, '배경 분리가 너무 오래 걸려요. 다시 시도해주세요');
         }
-        const [c1, c2] = LOOKFINDER_BG_PRESETS[key];
-        const gradient = document.createElement('canvas').getContext('2d').createLinearGradient(0, 0, 0, lookfinderMask.h);
-        gradient.addColorStop(0, c1);
-        gradient.addColorStop(1, c2);
-        const composited = compositeOntoBackground(lookfinderBaseCanvas, lookfinderMask.mask, lookfinderMask.w, lookfinderMask.h, gradient);
+        const preset = LOOKFINDER_BG_PRESETS[key];
+        let fill = preset[0];
+        if (preset.length > 1) {
+          // Gradient must span the actual photo's height, not the AI mask's
+          // (much smaller) native resolution — otherwise the color stops finish
+          // within the first sliver of the image and the rest renders as one
+          // flat solid color instead of a visible gradient.
+          const gradient = document.createElement('canvas').getContext('2d').createLinearGradient(0, 0, 0, lookfinderBaseCanvas.height);
+          gradient.addColorStop(0, preset[0]);
+          gradient.addColorStop(1, preset[1]);
+          fill = gradient;
+        }
+        const composited = compositeOntoBackground(lookfinderBaseCanvas, lookfinderMask.mask, lookfinderMask.w, lookfinderMask.h, fill);
         lookfinderResultCanvas = composited;
         document.getElementById('lookfinder-selfie-img').src = composited.toDataURL('image/jpeg', 0.92);
       } catch (err) {
         console.error('[lookfinder] bg-error', err);
-        showToast(`배경 적용에 실패했어요: ${err?.message || err}`);
+        showToast(`배경 적용에 실패했어요: ${err?.message || err} — 원본으로 유지할게요`);
+        chip.classList.remove('active');
+        document.querySelector('#lookfinder-bg-chips .chip[data-bg="none"]')?.classList.add('active');
       } finally {
         chip.disabled = false;
       }

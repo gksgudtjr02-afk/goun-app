@@ -374,16 +374,15 @@ async function createSegmenter(filesetResolver, delegate) {
 
 // Separate lazy model from the face landmarker above — different task, loaded
 // only once a user actually taps a background preset (not on every photo).
+// CPU only (not GPU-then-fallback like the face landmarker): on several real
+// phones the GPU delegate "succeeded" but returned a garbage/near-empty mask
+// with no error — CPU is slower but has been reliably correct.
 async function getImageSegmenter() {
   if (!segmenterPromise) {
     segmenterPromise = (async () => {
       const { FilesetResolver } = await import('@mediapipe/tasks-vision');
       const filesetResolver = await FilesetResolver.forVisionTasks(WASM_URL);
-      try {
-        return await createSegmenter(filesetResolver, 'GPU');
-      } catch {
-        return await createSegmenter(filesetResolver, 'CPU');
-      }
+      return createSegmenter(filesetResolver, 'CPU');
     })();
   }
   return segmenterPromise;
@@ -406,6 +405,15 @@ export async function segmentPerson(sourceCanvas) {
   const h = maskObj.height;
   const mask = maskObj.getAsFloat32Array();
   result.confidenceMasks.forEach((m) => m.close());
+
+  // Sanity check: a real selfie should have a meaningfully large "person"
+  // region. If the mask is essentially all-zero (segmentation silently
+  // failed — seen on some phones with no error thrown), bail out here
+  // instead of letting the caller composite a photo of nothing but background.
+  let maxVal = 0;
+  for (let i = 0; i < mask.length; i++) if (mask[i] > maxVal) maxVal = mask[i];
+  if (maxVal < 0.3) throw new Error('사람을 찾지 못했어요');
+
   return { mask, w, h };
 }
 

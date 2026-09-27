@@ -494,14 +494,15 @@ export const GOUN_MARKUP = `
         <div class="bg-picker-box">
           <h3 class="section-title" style="margin-bottom:10px;">✨ 배경 선택</h3>
           <div class="chip-row no-scroll" id="lookfinder-bg-chips">
-            <button class="chip active" data-bg="none">원본</button>
-            <button class="chip" data-bg="coral">코랄</button>
-            <button class="chip" data-bg="purple">퍼플</button>
-            <button class="chip" data-bg="mint">민트</button>
-            <button class="chip" data-bg="peach">피치</button>
-            <button class="chip" data-bg="lavender">라벤더</button>
-            <button class="chip" data-bg="sunset">선셋</button>
-            <button class="chip" data-bg="sky">스카이</button>
+            <button class="chip active bg-chip" data-bg="none">원본</button>
+            <button class="chip bg-chip bg-chip-color" data-bg="white" style="background:#FFFFFF;border:1.4px solid var(--line);color:var(--ink);">화이트</button>
+            <button class="chip bg-chip bg-chip-color" data-bg="coral" style="background:linear-gradient(135deg,#FF4D6D,#7C5CFC);">코랄</button>
+            <button class="chip bg-chip bg-chip-color" data-bg="purple" style="background:linear-gradient(135deg,#B39DFF,#5E3FE0);">퍼플</button>
+            <button class="chip bg-chip bg-chip-color" data-bg="mint" style="background:linear-gradient(135deg,#3DE8C0,#5B8DEF);">민트</button>
+            <button class="chip bg-chip bg-chip-color" data-bg="peach" style="background:linear-gradient(135deg,#FFB199,#FF5F9E);">피치</button>
+            <button class="chip bg-chip bg-chip-color" data-bg="lavender" style="background:linear-gradient(135deg,#C9A7FF,#FF9EC8);">라벤더</button>
+            <button class="chip bg-chip bg-chip-color" data-bg="sunset" style="background:linear-gradient(135deg,#FFC371,#FF5F6D);">선셋</button>
+            <button class="chip bg-chip bg-chip-color" data-bg="sky" style="background:linear-gradient(135deg,#89F7FE,#5B8DEF);">스카이</button>
           </div>
         </div>
 

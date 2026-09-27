@@ -414,6 +414,8 @@ html,body{
 .points-actions{ display:flex; gap:10px; }
 .points-actions button{ flex:1; padding:11px; font-size:13px; border-radius: var(--radius-pill); border:none; font-family:inherit; font-weight:600; cursor:pointer; }
 .points-actions .btn-outline{ border:1.4px solid var(--line); background:#fff; }
+.bg-chip-color{ color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.35); font-weight:700; }
+.bg-chip-color.active{ box-shadow: 0 0 0 2.5px var(--ink); }
 .bg-picker-box{
   background: linear-gradient(135deg, #FFF0EC, #F4EEFF);
   border-radius: var(--radius-lg);
