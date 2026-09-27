@@ -370,6 +370,7 @@ export const GOUN_MARKUP = `
           <i data-icon="camera"></i> 지금 사진 찍기
         </label>
         <input type="file" accept="image/*" capture="user" id="touchup-now-input" class="hidden">
+        <p class="muted small center hidden" id="touchup-now-error" style="margin-top:12px;color:var(--danger);"></p>
       </div>
 
       <div id="touchup-loading" class="hidden center" style="padding:60px 0;">

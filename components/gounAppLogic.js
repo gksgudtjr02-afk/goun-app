@@ -329,6 +329,7 @@ export function initGounApp(root, supabase) {
     const savedTime = new Date(saved.savedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
     const timeEl = document.getElementById('touchup-saved-time');
     if (timeEl) timeEl.textContent = `${savedTime}에 저장한 룩과 비교해요`;
+    document.getElementById('touchup-now-error')?.classList.add('hidden');
     showTouchupStep('now');
   }
 
@@ -357,10 +358,25 @@ export function initGounApp(root, supabase) {
     }
   });
 
+  function setTouchupNowError(msg) {
+    const el = document.getElementById('touchup-now-error');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('hidden', !msg);
+  }
+
   document.getElementById('touchup-now-input')?.addEventListener('change', async function () {
     const file = this.files?.[0];
     const saved = loadTouchupSavedLook();
-    if (!file || !saved) return;
+    setTouchupNowError('');
+    if (!file) {
+      setTouchupNowError('사진을 가져오지 못했어요. 다시 눌러서 촬영해주세요');
+      return;
+    }
+    if (!saved) {
+      setTouchupNowError('저장된 오늘의 룩을 찾지 못했어요. 스킨체크에서 다시 저장해주세요');
+      return;
+    }
 
     showTouchupStep('loading');
 
@@ -369,7 +385,7 @@ export function initGounApp(root, supabase) {
       const img = await loadImage(url);
       const now = await analyzeLookColors(img);
       if (!now.faceFound) {
-        showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
+        setTouchupNowError('사진에서 얼굴을 찾지 못했어요. 얼굴이 잘 보이게 다시 찍어주세요');
         showTouchupStep('now');
         return;
       }
@@ -424,14 +440,17 @@ export function initGounApp(root, supabase) {
       showTouchupStep('result');
     } catch (err) {
       console.error('[touchup] compare-error', err);
-      showToast('비교에 실패했어요. 다시 시도해주세요');
+      setTouchupNowError(`비교 중 오류가 났어요: ${err?.message || err}`);
       showTouchupStep('now');
     } finally {
       this.value = '';
     }
   });
 
-  document.getElementById('touchup-retry-btn')?.addEventListener('click', refreshTouchupView);
+  document.getElementById('touchup-retry-btn')?.addEventListener('click', () => {
+    setTouchupNowError('');
+    refreshTouchupView();
+  });
 
   /* ---------- Virtual Lab: product search & select ---------- */
   let selectedProducts = {}; // type -> product, so lip+eye+blush can be combined
