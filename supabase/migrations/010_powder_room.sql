@@ -34,7 +34,10 @@ insert into storage.buckets (id, name, public)
 values ('feed-photos', 'feed-photos', true)
 on conflict (id) do nothing;
 
-alter table storage.objects enable row level security;
+-- storage.objects already has RLS enabled by default on every Supabase
+-- project, and only the storage system role owns that table — so we don't
+-- (and can't) run `alter table storage.objects enable row level security`
+-- here; we only add the policies below.
 
 create policy "Anyone can view feed photos"
   on storage.objects for select
