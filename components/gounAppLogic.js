@@ -186,6 +186,7 @@ export function initGounApp(root, supabase) {
         <span class="grid-who"><span class="grid-who-dot"></span>${v.name}</span>
         ${v.hot ? '<span class="grid-badge">인기</span>' : ''}
         <span class="grid-cap">
+          ${v.products?.length ? `<span class="grid-swatches">${v.products.map(p => `<span class="grid-swatch" style="background:${p.color}" title="${p.brand} · ${p.name}"></span>`).join('')}</span>` : ''}
           <span class="grid-cap-title">${v.caption}</span>
           ${v.productLine ? `<span class="grid-cap-sub">${v.productLine}</span>` : ''}
         </span>
