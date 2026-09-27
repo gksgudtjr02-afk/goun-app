@@ -65,7 +65,7 @@ export const GOUN_MARKUP = `
 
     <button class="weather-strip" data-nav="touchup">
       <i data-icon="cloud"></i>
-      <span><strong>서울 미세먼지 나쁨</strong> · 오늘은 클렌징 두 번 신경 써주세요</span>
+      <span><strong>서울 미세먼지 나쁨</strong> · 오전 룩, 지금 상태 체크하기</span>
       <i data-icon="chevron-right" class="chev"></i>
     </button>
 
@@ -75,15 +75,6 @@ export const GOUN_MARKUP = `
       <p class="hero-sub">21.7k명이 좋아했어요 · 세럼 3종 사용</p>
     </div>
 
-    <button class="touchup-banner" data-nav="touchup">
-      <i data-icon="repeat"></i>
-      <div>
-        <strong>오전 룩, 아직 잘 유지되고 있을까요?</strong>
-        <span>지금 화장 상태 체크하기</span>
-      </div>
-      <i data-icon="chevron-right" class="chev"></i>
-    </button>
-
     <div class="quad-banner-grid">
       <button class="mini-banner mini-banner-color hidden" data-nav="color">
         <i data-icon="palette"></i>
@@ -92,7 +83,7 @@ export const GOUN_MARKUP = `
       </button>
       <button class="mini-banner mini-banner-celeb" data-nav="lookfinder">
         <i data-icon="camera"></i>
-        <strong>연예인 화장법 배우기</strong>
+        <strong>인플루언서 따라하기</strong>
         <span>사진으로 비슷한 제품 찾기</span>
       </button>
       <button class="mini-banner mini-banner-scan" data-nav="scanner">
@@ -445,15 +436,15 @@ export const GOUN_MARKUP = `
   <section id="view-lookfinder" class="view">
     <header class="sub-header">
       <button class="icon-btn" data-nav="home"><i data-icon="chevron-left"></i></button>
-      <span>연예인 화장법 따라하기</span>
+      <span>인플루언서 따라하기</span>
       <span class="spacer"></span>
     </header>
 
     <div class="scroll-pad">
       <div id="lookfinder-step1">
-        <p class="muted" style="margin-bottom:16px;">따라하고 싶은 연예인 사진을 올려주세요. 화장이 잘 보이는 사진일수록 정확해요.</p>
+        <p class="muted" style="margin-bottom:16px;">따라하고 싶은 인플루언서 사진을 올려주세요. 화장이 잘 보이는 사진일수록 정확해요.</p>
         <label class="btn-primary btn-block" for="lookfinder-ref-input" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-          <i data-icon="camera"></i> 연예인 사진 선택하기
+          <i data-icon="camera"></i> 인플루언서 사진 선택하기
         </label>
         <input type="file" accept="image/*" id="lookfinder-ref-input" class="hidden">
       </div>
@@ -473,8 +464,8 @@ export const GOUN_MARKUP = `
       <div id="lookfinder-result" class="hidden">
         <div class="compare-row">
           <div class="compare-card">
-            <span class="compare-label"><i data-icon="star"></i> 연예인 사진</span>
-            <img id="lookfinder-ref-img" class="thumb" style="width:100%;height:100%;object-fit:cover;" alt="연예인 사진">
+            <span class="compare-label"><i data-icon="star"></i> 인플루언서 사진</span>
+            <img id="lookfinder-ref-img" class="thumb" style="width:100%;height:100%;object-fit:cover;" alt="인플루언서 사진">
           </div>
           <div class="compare-card">
             <span class="compare-label"><i data-icon="user"></i> 내 화장 결과</span>

@@ -1350,7 +1350,7 @@ export function initGounApp(root, supabase) {
   });
 
   document.getElementById('lookfinder-share-btn')?.addEventListener('click', () => {
-    shareContent('고운에서 연예인 화장법 따라해봤어요', '나도 이 룩 따라할 수 있을까? 고운에서 비슷한 제품도 바로 찾아줘요 ✨ #고운 #GOUN');
+    shareContent('고운에서 인플루언서 화장법 따라해봤어요', '나도 이 룩 따라할 수 있을까? 고운에서 비슷한 제품도 바로 찾아줘요 ✨ #고운 #GOUN');
   });
 
   document.getElementById('lookfinder-retry-btn')?.addEventListener('click', resetLookfinder);
