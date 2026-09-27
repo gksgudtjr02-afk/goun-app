@@ -1712,7 +1712,10 @@ export function initGounApp(root, supabase) {
   async function handleLookfinderSelfieCapture(canvas) {
     if (!lookfinderColors || !currentUserId) return;
 
-    const ticket = await consumeAiTicket(currentUserId);
+    // AI 티켓 제한 테스트 중 임시로 끔 (반복 테스트할 때마다 막혀서 방해됨) —
+    // consumeAiTicket() 자체는 그대로 있으니, 다시 켤 땐 아래 줄만 원복하면 됨.
+    // const ticket = await consumeAiTicket(currentUserId);
+    const ticket = { ok: true, method: 'free', remainingFree: 999 };
     if (!ticket.ok) {
       showToast(`무료 체험을 다 썼고 포인트도 부족해요 (${ticket.pointsNeeded}P 더 필요). 친구를 초대하면 포인트를 받을 수 있어요!`);
       goTo('mypage');
