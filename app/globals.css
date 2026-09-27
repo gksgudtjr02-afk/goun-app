@@ -437,6 +437,12 @@ html,body{
 }
 .powder-shot .like i{ font-size:10px; }
 .powder-shot-swatches{ position:absolute; bottom:4px; right:5px; display:flex; gap:3px; }
+.powder-shot-delete{
+  position:absolute; top:4px; left:4px; width:20px; height:20px; border-radius:50%;
+  border:none; background:rgba(0,0,0,.45); color:#fff; display:flex; align-items:center;
+  justify-content:center; padding:0; cursor:pointer;
+}
+.powder-shot-delete i{ font-size:11px; }
 
 .invite-card{ background: linear-gradient(135deg, #EEE9FF, #FFE7EC); border-radius: var(--radius-lg); padding:18px; margin-bottom:22px; }
 .invite-card-top{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }

@@ -498,6 +498,10 @@ export const GOUN_MARKUP = `
             <button class="chip" data-bg="coral">코랄</button>
             <button class="chip" data-bg="purple">퍼플</button>
             <button class="chip" data-bg="mint">민트</button>
+            <button class="chip" data-bg="peach">피치</button>
+            <button class="chip" data-bg="lavender">라벤더</button>
+            <button class="chip" data-bg="sunset">선셋</button>
+            <button class="chip" data-bg="sky">스카이</button>
           </div>
         </div>
 

@@ -394,11 +394,17 @@ async function getImageSegmenter() {
  * (0 = background, 1 = person) the same pixel size as the source.
  */
 export async function segmentPerson(sourceCanvas) {
-  const w = sourceCanvas.width;
-  const h = sourceCanvas.height;
   const segmenter = await getImageSegmenter();
   const result = segmenter.segment(sourceCanvas);
-  const mask = result.confidenceMasks[0].getAsFloat32Array();
+  const maskObj = result.confidenceMasks?.[0];
+  if (!maskObj) throw new Error('배경을 분리하지 못했어요');
+  // The model's output mask is often a different (usually smaller, fixed)
+  // resolution than the source photo — NOT necessarily sourceCanvas's own
+  // width/height. Keep the mask's own dimensions here; compositeOntoBackground
+  // upscales it to match the actual photo before blending.
+  const w = maskObj.width;
+  const h = maskObj.height;
+  const mask = maskObj.getAsFloat32Array();
   result.confidenceMasks.forEach((m) => m.close());
   return { mask, w, h };
 }
@@ -406,9 +412,38 @@ export async function segmentPerson(sourceCanvas) {
 /**
  * Composites `sourceCanvas` onto `backgroundFill` (a color, gradient, or
  * pattern usable as a canvas fillStyle) using a mask from segmentPerson().
+ * `maskW`/`maskH` are the mask's OWN resolution (from segmentPerson), which
+ * this upscales (smoothly, via canvas scaling) to sourceCanvas's actual size
+ * before blending — the two are frequently not the same resolution.
  * Returns a new canvas; the inputs are left untouched.
  */
-export function compositeOntoBackground(sourceCanvas, mask, w, h, backgroundFill) {
+export function compositeOntoBackground(sourceCanvas, mask, maskW, maskH, backgroundFill) {
+  const w = sourceCanvas.width;
+  const h = sourceCanvas.height;
+
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = maskW;
+  maskCanvas.height = maskH;
+  const maskCtx = maskCanvas.getContext('2d');
+  const maskImg = maskCtx.createImageData(maskW, maskH);
+  for (let i = 0; i < mask.length; i++) {
+    const v = Math.max(0, Math.min(255, Math.round(mask[i] * 255)));
+    maskImg.data[i * 4] = v;
+    maskImg.data[i * 4 + 1] = v;
+    maskImg.data[i * 4 + 2] = v;
+    maskImg.data[i * 4 + 3] = 255;
+  }
+  maskCtx.putImageData(maskImg, 0, 0);
+
+  // Upscale the mask to the photo's real size using the canvas's own
+  // (smoothed) image scaling, instead of indexing it 1:1 against full-res pixels.
+  const upCanvas = document.createElement('canvas');
+  upCanvas.width = w;
+  upCanvas.height = h;
+  const upCtx = upCanvas.getContext('2d');
+  upCtx.drawImage(maskCanvas, 0, 0, w, h);
+  const upscaledMask = upCtx.getImageData(0, 0, w, h).data;
+
   const out = document.createElement('canvas');
   out.width = w;
   out.height = h;
@@ -420,8 +455,8 @@ export function compositeOntoBackground(sourceCanvas, mask, w, h, backgroundFill
   const srcCtx = sourceCanvas.getContext('2d');
   const srcData = srcCtx.getImageData(0, 0, w, h);
 
-  for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
-    const alpha = mask[i];
+  for (let p = 0; p < bgData.data.length; p += 4) {
+    const alpha = upscaledMask[p] / 255;
     bgData.data[p] = srcData.data[p] * alpha + bgData.data[p] * (1 - alpha);
     bgData.data[p + 1] = srcData.data[p + 1] * alpha + bgData.data[p + 1] * (1 - alpha);
     bgData.data[p + 2] = srcData.data[p + 2] * alpha + bgData.data[p + 2] * (1 - alpha);

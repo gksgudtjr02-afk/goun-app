@@ -1502,11 +1502,28 @@ export function initGounApp(root, supabase) {
     grid.innerHTML = list.map(p => `
       <div class="powder-shot" style="background-image:url(${p.image_url});background-size:cover;background-position:center;">
         <span class="dot" style="background:${p.source_type === 'lookfinder' ? 'var(--coral)' : 'var(--purple)'};"></span>
+        <button class="powder-shot-delete" data-id="${p.id}" aria-label="삭제"><i data-icon="x"></i></button>
         ${p.products?.length ? `<span class="powder-shot-swatches">${p.products.map(pr => `<span class="grid-swatch" style="background:${pr.color}" title="${pr.brand} · ${pr.name}"></span>`).join('')}</span>` : ''}
         <span class="like"><span data-icon="heart"></span>${p.likes || 0}</span>
       </div>
     `).join('');
     paintIcons(grid);
+    grid.querySelectorAll('.powder-shot-delete').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!window.confirm('이 게시물을 삭제할까요?')) return;
+        const id = btn.getAttribute('data-id');
+        btn.disabled = true;
+        const { error } = await supabase.from('feed_posts').delete().eq('id', id).eq('user_id', currentUserId);
+        if (error) {
+          showToast('삭제에 실패했어요');
+          btn.disabled = false;
+          return;
+        }
+        loadPowderRoom();
+        loadFeed();
+      });
+    });
   }
 
   document.getElementById('powder-share-btn')?.addEventListener('click', () => {
@@ -1664,6 +1681,10 @@ export function initGounApp(root, supabase) {
     coral: ['#FF4D6D', '#7C5CFC'],
     purple: ['#B39DFF', '#5E3FE0'],
     mint: ['#3DE8C0', '#5B8DEF'],
+    peach: ['#FFB199', '#FF5F9E'],
+    lavender: ['#C9A7FF', '#FF9EC8'],
+    sunset: ['#FFC371', '#FF5F6D'],
+    sky: ['#89F7FE', '#5B8DEF'],
   };
 
   function showLookfinderStep(step) {
