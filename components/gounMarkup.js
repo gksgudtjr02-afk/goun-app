@@ -522,7 +522,7 @@ export const GOUN_MARKUP = `
       </div>
 
       <div class="powder-cta-row">
-        <button class="btn-primary" id="powder-lab-btn" data-nav="lab"><i data-icon="sparkles"></i> 뷰티랩에서 발라보기</button>
+        <button class="btn-primary" id="powder-lab-btn" data-nav="lab"><i data-icon="sparkles"></i> 뷰티랩 둘러보기</button>
         <button class="btn-primary" id="powder-lookfinder-btn" data-nav="lookfinder"><i data-icon="camera"></i> 인플루언서 화장법</button>
       </div>
 

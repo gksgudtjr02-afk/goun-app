@@ -1684,7 +1684,7 @@ export function initGounApp(root, supabase) {
     try {
       const url = URL.createObjectURL(file);
       const img = await loadImage(url);
-      const colors = await analyzeLookColors(img);
+      const colors = await withTimeout(analyzeLookColors(img), 15000, '분석이 너무 오래 걸려요. 다시 시도해주세요');
       if (!colors.faceFound) {
         showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
         resetLookfinder();
@@ -1723,7 +1723,7 @@ export function initGounApp(root, supabase) {
     document.getElementById('lookfinder-loading-text').textContent = '내 얼굴에 화장을 입히고 있어요...';
 
     try {
-      const { canvas: resultCanvas, faceFound } = await applyDetectedLook(canvas, lookfinderColors);
+      const { canvas: resultCanvas, faceFound } = await withTimeout(applyDetectedLook(canvas, lookfinderColors), 15000, '적용이 너무 오래 걸려요. 다시 시도해주세요');
       if (!faceFound) {
         showToast('사진에서 얼굴을 찾지 못했어요. 다시 촬영해주세요');
         showLookfinderStep('step2');
