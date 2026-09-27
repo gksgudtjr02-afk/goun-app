@@ -83,7 +83,7 @@ export const GOUN_MARKUP = `
       </button>
       <button class="mini-banner mini-banner-celeb" data-nav="lookfinder">
         <i data-icon="camera"></i>
-        <strong>인플루언서 따라하기</strong>
+        <strong>인플루언서 화장법</strong>
         <span>사진으로 비슷한 제품 찾기</span>
       </button>
       <button class="mini-banner mini-banner-scan" data-nav="scanner">
@@ -451,7 +451,7 @@ export const GOUN_MARKUP = `
   <section id="view-lookfinder" class="view">
     <header class="sub-header">
       <button class="icon-btn" data-nav="home"><i data-icon="chevron-left"></i></button>
-      <span>인플루언서 따라하기</span>
+      <span>인플루언서 화장법</span>
       <span class="spacer"></span>
     </header>
 
