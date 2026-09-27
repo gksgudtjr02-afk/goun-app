@@ -651,6 +651,35 @@ export function initGounApp(root, supabase) {
     await supabase.from('point_history').insert({ user_id: userId, label, amount });
   }
 
+  // AI 티켓: 무료 2회 제공 후 3회차부터는 포인트로 결제 (990P = 990원 상당).
+  // 친구 초대로 받은 포인트(최대 800P)가 자연스럽게 첫 유료 이용을 커버해주는 구조.
+  const AI_TICKET_FREE_LIMIT = 2;
+  const AI_TICKET_COST_POINTS = 990;
+
+  async function consumeAiTicket(userId) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('points, ai_ticket_free_used')
+      .eq('id', userId)
+      .maybeSingle();
+    if (!profile) return { ok: false, reason: 'no-profile' };
+
+    if (profile.ai_ticket_free_used < AI_TICKET_FREE_LIMIT) {
+      await supabase
+        .from('profiles')
+        .update({ ai_ticket_free_used: profile.ai_ticket_free_used + 1 })
+        .eq('id', userId);
+      return { ok: true, method: 'free', remainingFree: AI_TICKET_FREE_LIMIT - profile.ai_ticket_free_used - 1 };
+    }
+
+    if (profile.points >= AI_TICKET_COST_POINTS) {
+      await awardPoints(userId, -AI_TICKET_COST_POINTS, 'AI 분석 이용권 사용');
+      return { ok: true, method: 'point' };
+    }
+
+    return { ok: false, reason: 'insufficient-points', pointsNeeded: AI_TICKET_COST_POINTS - profile.points };
+  }
+
   // First real activity (adding a wishlist item) after signing up via an
   // invite link pays out both the referrer and the referred user, once.
   async function maybeRewardReferral() {
@@ -1274,6 +1303,20 @@ export function initGounApp(root, supabase) {
     const file = this.files?.[0];
     if (!file || !lookfinderColors) return;
 
+    if (!currentUserId) {
+      showToast('로그인 후 이용해주세요');
+      this.value = '';
+      return;
+    }
+
+    const ticket = await consumeAiTicket(currentUserId);
+    if (!ticket.ok) {
+      showToast(`무료 체험을 다 썼고 포인트도 부족해요 (${ticket.pointsNeeded}P 더 필요). 친구를 초대하면 포인트를 받을 수 있어요!`);
+      this.value = '';
+      goTo('mypage');
+      return;
+    }
+
     showLookfinderStep('loading');
     document.getElementById('lookfinder-loading-text').textContent = '내 얼굴에 화장을 입히고 있어요...';
 
@@ -1293,6 +1336,12 @@ export function initGounApp(root, supabase) {
         matches.innerHTML = ['lip', 'eye', 'blush'].map(type => renderLookfinderMatch(type, lookfinderColors[type])).join('');
       }
       showLookfinderStep('result');
+      loadProfilePoints(currentUserId);
+      if (ticket.method === 'free') {
+        showToast(ticket.remainingFree > 0 ? `무료 체험 ${ticket.remainingFree}회 남았어요` : '무료 체험을 다 썼어요. 다음부턴 990P가 사용돼요');
+      } else {
+        showToast('990P를 사용해서 분석했어요');
+      }
     } catch (err) {
       console.error('[lookfinder] apply-error', err);
       showToast('적용에 실패했어요. 다시 시도해주세요');
