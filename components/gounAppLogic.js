@@ -182,8 +182,16 @@ export function initGounApp(root, supabase) {
         item.style.backgroundSize = 'cover';
         item.style.backgroundPosition = 'center';
       }
-      item.innerHTML = `
-        ${v.image_url ? '' : '<div class="thumb-fill" data-icon="user"></div>'}
+      item.innerHTML = v.image_url ? `
+        <span class="grid-who"><span class="grid-who-dot"></span>${v.name}</span>
+        ${v.hot ? '<span class="grid-badge">인기</span>' : ''}
+        <span class="grid-cap">
+          <span class="grid-cap-title">${v.caption}</span>
+          ${v.productLine ? `<span class="grid-cap-sub">${v.productLine}</span>` : ''}
+        </span>
+        <span class="grid-like"><span data-icon="heart"></span> ${v.likes}</span>
+      ` : `
+        <div class="thumb-fill" data-icon="user"></div>
         ${v.flag ? `<span class="grid-flag">${v.flag}</span>` : ''}
         ${v.hot ? '<span class="grid-badge">인기</span>' : ''}
         <span class="grid-like"><span data-icon="heart"></span> ${v.likes}</span>
@@ -210,6 +218,7 @@ export function initGounApp(root, supabase) {
         cat: row.products?.[0]?.type || 'base',
         hot: (row.likes ?? 0) >= 50,
         caption: row.caption || (row.source_type === 'lookfinder' ? '인플루언서 화장법 따라하기 결과' : '뷰티랩 발라보기 결과'),
+        productLine: row.products?.[0] ? `${row.products[0].brand} · ${row.products[0].price}` : '',
         image_url: row.image_url,
       }));
     } else {

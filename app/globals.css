@@ -219,20 +219,34 @@ html,body{
 }
 .feed-empty{ grid-column: 1 / -1; padding: 40px 0; }
 .grid-item{
-  position:relative; aspect-ratio: 9/13.5; border-radius: var(--radius-md);
-  overflow:hidden; background:#1c1a1e; cursor:pointer;
+  position:relative; aspect-ratio: 4/5; border-radius: var(--radius-md);
+  overflow:hidden; background:#1c1a1e; background-size:cover; background-position:center;
+  cursor:pointer;
 }
 .grid-item .thumb-fill{
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   color:#4a4750; font-size:34px;
 }
 .grid-flag{ position:absolute; top:8px; left:8px; font-size:14px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+.grid-who{
+  position:absolute; top:8px; left:8px; display:flex; align-items:center; gap:5px;
+  background: rgba(0,0,0,.35); color:#fff; font-size:9.5px; font-weight:600;
+  padding:4px 8px 4px 4px; border-radius: var(--radius-pill); max-width: calc(100% - 16px);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.grid-who-dot{ width:14px; height:14px; border-radius:50%; background:#fff; opacity:.85; flex-shrink:0; }
+.grid-cap{
+  position:absolute; bottom:0; left:0; right:0; padding:9px 10px;
+  background: linear-gradient(to top, rgba(0,0,0,.72), transparent); color:#fff;
+}
+.grid-cap-title{ font-size:10.5px; font-weight:600; display:block; }
+.grid-cap-sub{ font-size:9px; opacity:.85; display:block; margin-top:2px; }
 .grid-badge{
   position:absolute; top:8px; right:8px; background: var(--coral); color:#fff;
   font-size:9.5px; font-weight:700; padding:3px 7px; border-radius: var(--radius-pill);
 }
 .grid-like{
-  position:absolute; bottom:8px; left:8px; color:#fff; font-size:11px;
+  position:absolute; bottom:8px; right:9px; color:#fff; font-size:11px; z-index:1;
   display:flex; align-items:center; gap:4px; text-shadow: 0 1px 3px rgba(0,0,0,.5);
 }
 
