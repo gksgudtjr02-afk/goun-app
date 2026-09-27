@@ -412,6 +412,13 @@ html,body{
 .points-actions{ display:flex; gap:10px; }
 .points-actions button{ flex:1; padding:11px; font-size:13px; border-radius: var(--radius-pill); border:none; font-family:inherit; font-weight:600; cursor:pointer; }
 .points-actions .btn-outline{ border:1.4px solid var(--line); background:#fff; }
+.bg-picker-box{
+  background: linear-gradient(135deg, #FFF0EC, #F4EEFF);
+  border-radius: var(--radius-lg);
+  padding: 16px 16px 14px;
+  margin: 16px 0;
+}
+
 /* ---------- Powder Room ("파우더룸") ---------- */
 .powder-cta-row{ display:flex; gap:10px; margin-bottom:14px; }
 .powder-cta-row button{ flex:1; padding:13px 10px; font-size:13px; }

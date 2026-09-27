@@ -490,15 +490,17 @@ export const GOUN_MARKUP = `
           </div>
         </div>
 
-        <div id="lookfinder-matches"></div>
-
-        <p class="muted small" style="margin:14px 0 8px;">배경 선택</p>
-        <div class="chip-row no-scroll" id="lookfinder-bg-chips">
-          <button class="chip active" data-bg="none">원본</button>
-          <button class="chip" data-bg="coral">코랄</button>
-          <button class="chip" data-bg="purple">퍼플</button>
-          <button class="chip" data-bg="mint">민트</button>
+        <div class="bg-picker-box">
+          <h3 class="section-title" style="margin-bottom:10px;">✨ 배경 선택</h3>
+          <div class="chip-row no-scroll" id="lookfinder-bg-chips">
+            <button class="chip active" data-bg="none">원본</button>
+            <button class="chip" data-bg="coral">코랄</button>
+            <button class="chip" data-bg="purple">퍼플</button>
+            <button class="chip" data-bg="mint">민트</button>
+          </div>
         </div>
+
+        <div id="lookfinder-matches"></div>
 
         <button class="btn-primary btn-block" id="lookfinder-post-btn" style="margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px;">
           <i data-icon="mirror"></i> 고운에 올리기
