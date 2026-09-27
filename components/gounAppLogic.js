@@ -389,13 +389,26 @@ export function initGounApp(root, supabase) {
       }
       const nowDataUrl = resizeToDataUrl(canvas, 480);
 
-      const LIP_FADE_THRESHOLD = 40;
-      const BLUSH_FADE_THRESHOLD = 35;
-      const OIL_BRIGHTNESS_THRESHOLD = 15;
+      const LIP_FADE_THRESHOLD = 55;
+      const BLUSH_FADE_THRESHOLD = 45;
+      const OIL_BRIGHTNESS_THRESHOLD = 20;
 
-      const lipDist = (saved.colors.lip && now.lip) ? colorDistance(saved.colors.lip, now.lip) : 0;
-      const blushDist = (saved.colors.blush && now.blush) ? colorDistance(saved.colors.blush, now.blush) : 0;
-      const oilDelta = (saved.colors.tzone && now.tzone) ? hexBrightness(now.tzone) - hexBrightness(saved.colors.tzone) : 0;
+      // Compare colors *relative to the T-zone (bare skin) in the same photo*, not raw
+      // RGB across photos — a shot taken moments later can have noticeably different
+      // lighting/white-balance, which shifted every raw color enough to falsely read as
+      // "faded" even with zero makeup on. Lip/blush intensity relative to bare skin, and
+      // T-zone shine relative to the cheek, cancel out most of that per-shot lighting drift.
+      const relativeMetrics = (c) => ({
+        lipContrast: (c.lip && c.tzone) ? colorDistance(c.lip, c.tzone) : null,
+        blushContrast: (c.blush && c.tzone) ? colorDistance(c.blush, c.tzone) : null,
+        oilIndex: (c.tzone && c.blush) ? hexBrightness(c.tzone) - hexBrightness(c.blush) : null,
+      });
+      const savedM = relativeMetrics(saved.colors);
+      const nowM = relativeMetrics(now);
+
+      const lipDist = (savedM.lipContrast != null && nowM.lipContrast != null) ? Math.abs(savedM.lipContrast - nowM.lipContrast) : 0;
+      const blushDist = (savedM.blushContrast != null && nowM.blushContrast != null) ? Math.abs(savedM.blushContrast - nowM.blushContrast) : 0;
+      const oilDelta = (savedM.oilIndex != null && nowM.oilIndex != null) ? nowM.oilIndex - savedM.oilIndex : 0;
 
       const lipFaded = lipDist > LIP_FADE_THRESHOLD;
       const blushFaded = blushDist > BLUSH_FADE_THRESHOLD;
