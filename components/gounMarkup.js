@@ -201,7 +201,10 @@ export const GOUN_MARKUP = `
         <div class="product-card"><div class="product-icon"><i data-icon="bottle"></i></div><span>에뛰드하우스<br>블러 프라이머</span></div>
       </div>
 
-      <button class="btn-secondary btn-block" id="save-look-btn"><i data-icon="bookmark"></i> 오늘 룩 저장하기</button>
+      <label class="btn-secondary btn-block" for="touchup-save-input" id="save-look-btn" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <i data-icon="bookmark"></i> 오늘 룩 저장하기
+      </label>
+      <input type="file" accept="image/*" capture="user" id="touchup-save-input" class="hidden">
       <button class="btn-primary btn-block hidden" id="check-now-btn" data-nav="touchup"><i data-icon="repeat"></i> 지금 상태 비교하기</button>
       <button class="btn-outline btn-block" data-nav="color"><i data-icon="palette"></i> 퍼스널 컬러 진단 보기</button>
       <button class="btn-outline btn-block" data-nav="camera">다시 촬영하기</button>
@@ -355,38 +358,55 @@ export const GOUN_MARKUP = `
     </header>
 
     <div class="scroll-pad">
-      <p class="muted center" id="touchup-time">오전 9:12에 저장한 룩과 비교했어요</p>
+      <div id="touchup-empty" class="hidden center" style="padding:60px 0;">
+        <p class="muted">아직 저장한 오늘의 룩이 없어요</p>
+        <p class="muted small" style="margin-top:4px;">AI 스킨체크 결과 화면에서 "오늘 룩 저장하기"를 먼저 눌러주세요</p>
+        <button class="btn-primary btn-block" data-nav="camera" style="margin-top:20px;">스킨체크 하러 가기</button>
+      </div>
 
-      <div class="compare-row">
-        <div class="compare-card">
-          <span class="compare-label"><i data-icon="star"></i> 오전 저장 룩</span>
-          <div class="thumb"><i data-icon="user"></i></div>
-        </div>
-        <div class="compare-card">
-          <span class="compare-label">지금</span>
-          <div class="thumb"><i data-icon="user"></i>
-            <span class="mini-tag mini-tl danger">유분 증가</span>
-            <span class="mini-tag mini-bl danger">립 지워짐</span>
+      <div id="touchup-step-now" class="hidden">
+        <p class="muted center" id="touchup-saved-time" style="margin-bottom:16px;"></p>
+        <label class="btn-primary btn-block" for="touchup-now-input" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <i data-icon="camera"></i> 지금 사진 찍기
+        </label>
+        <input type="file" accept="image/*" capture="user" id="touchup-now-input" class="hidden">
+      </div>
+
+      <div id="touchup-loading" class="hidden center" style="padding:60px 0;">
+        <p class="muted">지금 상태를 비교하고 있어요...</p>
+      </div>
+
+      <div id="touchup-result" class="hidden">
+        <p class="muted center" id="touchup-time">오전에 저장한 룩과 비교했어요</p>
+
+        <div class="compare-row">
+          <div class="compare-card">
+            <span class="compare-label"><i data-icon="star"></i> 오전 저장 룩</span>
+            <div class="thumb"><img id="touchup-saved-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;" alt="오전 저장 룩"></div>
+          </div>
+          <div class="compare-card">
+            <span class="compare-label">지금</span>
+            <div class="thumb">
+              <img id="touchup-now-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;" alt="지금">
+              <div id="touchup-tags"></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="info-box">
-        <span class="info-title">일치율</span>
-        <div class="progress"><div class="progress-fill" style="width:64%"></div></div>
-        <span class="progress-num">64%</span>
-      </div>
+        <div class="info-box">
+          <span class="info-title">일치율</span>
+          <div class="progress"><div class="progress-fill" id="touchup-match-fill" style="width:0%"></div></div>
+          <span class="progress-num" id="touchup-match-num">0%</span>
+        </div>
 
-      <div class="advice-block">
-        <h3>오전 룩으로 되돌리려면</h3>
-        <ul>
-          <li>T존에 블로팅 티슈로 유분 제거 후 파우더 덧바르기</li>
-          <li>지워진 립 라인 위에 같은 컬러로 다시 덧바르기</li>
-          <li class="muted-item">볼 홍조는 아직 유지되고 있어요</li>
-        </ul>
-      </div>
+        <div class="advice-block">
+          <h3>오전 룩으로 되돌리려면</h3>
+          <ul id="touchup-advice-list"></ul>
+        </div>
 
-      <button class="btn-primary btn-block" data-nav="camera">고친 후 다시 체크하기</button>
+        <button class="btn-primary btn-block" data-nav="camera">고친 후 다시 체크하기</button>
+        <button class="btn-outline btn-block" id="touchup-retry-btn" style="margin-top:8px;">지금 사진 다시 찍기</button>
+      </div>
     </div>
   </section>
 

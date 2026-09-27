@@ -14,6 +14,8 @@ const EYE_OUTER_R = 33;
 const EYE_OUTER_L = 263;
 const MOUTH_CORNER_R = 61;
 const MOUTH_CORNER_L = 291;
+const FOREHEAD = 10;
+const NOSE_TIP = 4;
 
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task';
@@ -316,7 +318,15 @@ export async function analyzeLookColors(imageEl) {
   const cheekBox = (c) => ({ minX: c.x - cheekSize / 2, maxX: c.x + cheekSize / 2, minY: c.y - cheekSize / 2, maxY: c.y + cheekSize / 2 });
   const blushColor = mixHex(averageColorInBox(ctx, w, h, cheekBox(rCheek)), averageColorInBox(ctx, w, h, cheekBox(lCheek)));
 
-  return { faceFound: true, lip: lipColor, eye: eyeColor, blush: blushColor };
+  // T-zone (forehead + nose bridge): sampled for oiliness/shine comparison, not
+  // makeup color matching, so it's kept separate from the lip/eye/blush trio above.
+  const tSize = Math.max(10, eyeWidth * 0.3);
+  const tBox = (c) => ({ minX: c.x - tSize / 2, maxX: c.x + tSize / 2, minY: c.y - tSize / 2, maxY: c.y + tSize / 2 });
+  const foreheadPt = toPoint(face, FOREHEAD, w, h);
+  const noseTipPt = toPoint(face, NOSE_TIP, w, h);
+  const tzoneColor = mixHex(averageColorInBox(ctx, w, h, tBox(foreheadPt)), averageColorInBox(ctx, w, h, tBox(noseTipPt)));
+
+  return { faceFound: true, lip: lipColor, eye: eyeColor, blush: blushColor, tzone: tzoneColor };
 }
 
 /**

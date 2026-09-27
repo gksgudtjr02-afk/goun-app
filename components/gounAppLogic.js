@@ -209,6 +209,7 @@ export function initGounApp(root, supabase) {
     if (bottomNav) {
       bottomNav.style.display = ['home', 'camera', 'lab', 'mypage'].includes(id) ? 'flex' : 'none';
     }
+    if (id === 'touchup') refreshTouchupView();
     window.scrollTo(0, 0);
   }
 
@@ -291,11 +292,146 @@ export function initGounApp(root, supabase) {
       }
     }, 250);
   });
-  document.getElementById('save-look-btn')?.addEventListener('click', function () {
-    showToast('오늘 룩을 저장했어요. 오후에 비교해보세요!');
-    this.classList.add('hidden');
-    document.getElementById('check-now-btn').classList.remove('hidden');
+  /* ---------- Touch-up check: compare saved look vs now, using free MediaPipe color-diff ---------- */
+  const TOUCHUP_STORAGE_KEY = 'goun_touchup_look';
+
+  function resizeToDataUrl(img, maxW) {
+    const canvas = document.createElement('canvas');
+    const scale = Math.min(1, maxW / img.naturalWidth);
+    canvas.width = img.naturalWidth * scale;
+    canvas.height = img.naturalHeight * scale;
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.8);
+  }
+
+  function loadTouchupSavedLook() {
+    try {
+      const raw = localStorage.getItem(TOUCHUP_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function showTouchupStep(step) {
+    document.getElementById('touchup-empty')?.classList.toggle('hidden', step !== 'empty');
+    document.getElementById('touchup-step-now')?.classList.toggle('hidden', step !== 'now');
+    document.getElementById('touchup-loading')?.classList.toggle('hidden', step !== 'loading');
+    document.getElementById('touchup-result')?.classList.toggle('hidden', step !== 'result');
+  }
+
+  function refreshTouchupView() {
+    const saved = loadTouchupSavedLook();
+    if (!saved) {
+      showTouchupStep('empty');
+      return;
+    }
+    const savedTime = new Date(saved.savedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    const timeEl = document.getElementById('touchup-saved-time');
+    if (timeEl) timeEl.textContent = `${savedTime}에 저장한 룩과 비교해요`;
+    showTouchupStep('now');
+  }
+
+  document.getElementById('touchup-save-input')?.addEventListener('change', async function () {
+    const file = this.files?.[0];
+    if (!file) return;
+
+    try {
+      const url = URL.createObjectURL(file);
+      const img = await loadImage(url);
+      const colors = await analyzeLookColors(img);
+      if (!colors.faceFound) {
+        showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
+        return;
+      }
+      const dataUrl = resizeToDataUrl(img, 480);
+      localStorage.setItem(TOUCHUP_STORAGE_KEY, JSON.stringify({ dataUrl, colors, savedAt: Date.now() }));
+      showToast('오늘 룩을 저장했어요. 나중에 비교해보세요!');
+      document.getElementById('save-look-btn')?.classList.add('hidden');
+      document.getElementById('check-now-btn')?.classList.remove('hidden');
+    } catch (err) {
+      console.error('[touchup] save-error', err);
+      showToast('저장에 실패했어요. 다시 시도해주세요');
+    } finally {
+      this.value = '';
+    }
   });
+
+  document.getElementById('touchup-now-input')?.addEventListener('change', async function () {
+    const file = this.files?.[0];
+    const saved = loadTouchupSavedLook();
+    if (!file || !saved) return;
+
+    showTouchupStep('loading');
+
+    try {
+      const url = URL.createObjectURL(file);
+      const img = await loadImage(url);
+      const now = await analyzeLookColors(img);
+      if (!now.faceFound) {
+        showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
+        showTouchupStep('now');
+        return;
+      }
+      const nowDataUrl = resizeToDataUrl(img, 480);
+
+      const LIP_FADE_THRESHOLD = 40;
+      const BLUSH_FADE_THRESHOLD = 35;
+      const OIL_BRIGHTNESS_THRESHOLD = 15;
+
+      const lipDist = (saved.colors.lip && now.lip) ? colorDistance(saved.colors.lip, now.lip) : 0;
+      const blushDist = (saved.colors.blush && now.blush) ? colorDistance(saved.colors.blush, now.blush) : 0;
+      const oilDelta = (saved.colors.tzone && now.tzone) ? hexBrightness(now.tzone) - hexBrightness(saved.colors.tzone) : 0;
+
+      const lipFaded = lipDist > LIP_FADE_THRESHOLD;
+      const blushFaded = blushDist > BLUSH_FADE_THRESHOLD;
+      const oilIncreased = oilDelta > OIL_BRIGHTNESS_THRESHOLD;
+
+      const tagsEl = document.getElementById('touchup-tags');
+      if (tagsEl) {
+        tagsEl.innerHTML = [
+          oilIncreased ? '<span class="mini-tag mini-tl danger">유분 증가</span>' : '',
+          lipFaded ? '<span class="mini-tag mini-bl danger">립 지워짐</span>' : '',
+        ].join('');
+      }
+
+      const adviceList = document.getElementById('touchup-advice-list');
+      if (adviceList) {
+        const items = [];
+        items.push(oilIncreased
+          ? '<li>T존에 블로팅 티슈로 유분 제거 후 파우더 덧바르기</li>'
+          : '<li class="muted-item">유분은 아직 잘 유지되고 있어요</li>');
+        items.push(lipFaded
+          ? '<li>지워진 립 라인 위에 같은 컬러로 다시 덧바르기</li>'
+          : '<li class="muted-item">립 컬러는 아직 유지되고 있어요</li>');
+        items.push(blushFaded
+          ? '<li>볼에 블러셔를 가볍게 덧발라주기</li>'
+          : '<li class="muted-item">볼 홍조는 아직 유지되고 있어요</li>');
+        adviceList.innerHTML = items.join('');
+      }
+
+      const distScore = (dist) => Math.max(0, 100 - dist / 3);
+      const oilScore = Math.max(0, 100 - Math.max(0, oilDelta) * 2);
+      const matchPct = Math.round((distScore(lipDist) + distScore(blushDist) + oilScore) / 3);
+
+      document.getElementById('touchup-match-fill').style.width = `${matchPct}%`;
+      document.getElementById('touchup-match-num').textContent = `${matchPct}%`;
+      document.getElementById('touchup-saved-img').src = saved.dataUrl;
+      document.getElementById('touchup-now-img').src = nowDataUrl;
+      const savedTime = new Date(saved.savedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('touchup-time').textContent = `${savedTime}에 저장한 룩과 비교했어요`;
+
+      showTouchupStep('result');
+    } catch (err) {
+      console.error('[touchup] compare-error', err);
+      showToast('비교에 실패했어요. 다시 시도해주세요');
+      showTouchupStep('now');
+    } finally {
+      this.value = '';
+    }
+  });
+
+  document.getElementById('touchup-retry-btn')?.addEventListener('click', refreshTouchupView);
 
   /* ---------- Virtual Lab: product search & select ---------- */
   let selectedProducts = {}; // type -> product, so lip+eye+blush can be combined
@@ -1214,6 +1350,11 @@ export function initGounApp(root, supabase) {
     const [ra, ga, ba] = hexToRgb(hexA);
     const [rb, gb, bb] = hexToRgb(hexB);
     return Math.sqrt((ra - rb) ** 2 + (ga - gb) ** 2 + (ba - bb) ** 2);
+  }
+
+  function hexBrightness(hex) {
+    const [r, g, b] = hexToRgb(hex);
+    return 0.299 * r + 0.587 * g + 0.114 * b;
   }
 
   function findClosestProduct(type, hex) {
