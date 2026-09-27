@@ -201,10 +201,7 @@ export const GOUN_MARKUP = `
         <div class="product-card"><div class="product-icon"><i data-icon="bottle"></i></div><span>에뛰드하우스<br>블러 프라이머</span></div>
       </div>
 
-      <label class="btn-secondary btn-block" for="touchup-save-input" id="save-look-btn" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-        <i data-icon="bookmark"></i> 오늘 룩 저장하기
-      </label>
-      <input type="file" accept="image/*" capture="user" id="touchup-save-input" class="hidden">
+      <button class="btn-secondary btn-block" id="save-look-btn"><i data-icon="bookmark"></i> 오늘 룩 저장하기</button>
       <button class="btn-primary btn-block hidden" id="check-now-btn" data-nav="touchup"><i data-icon="repeat"></i> 지금 상태 비교하기</button>
       <button class="btn-outline btn-block" data-nav="color"><i data-icon="palette"></i> 퍼스널 컬러 진단 보기</button>
       <button class="btn-outline btn-block" data-nav="camera">다시 촬영하기</button>
@@ -366,10 +363,7 @@ export const GOUN_MARKUP = `
 
       <div id="touchup-step-now" class="hidden">
         <p class="muted center" id="touchup-saved-time" style="margin-bottom:16px;"></p>
-        <label class="btn-primary btn-block" for="touchup-now-input" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-          <i data-icon="camera"></i> 지금 사진 찍기
-        </label>
-        <input type="file" accept="image/*" capture="user" id="touchup-now-input" class="hidden">
+        <button class="btn-primary btn-block" id="touchup-now-btn"><i data-icon="camera"></i> 지금 사진 찍기</button>
         <p class="muted small center hidden" id="touchup-now-error" style="margin-top:12px;color:var(--danger);"></p>
       </div>
 
@@ -791,6 +785,21 @@ export const GOUN_MARKUP = `
       </div>
       <div class="tryon-bottom tryon-result-actions hidden" id="tryon-result-actions">
         <button class="btn-outline btn-block" id="tryon-retake-btn">다시 찍기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TOUCH-UP CHECK CAMERA (in-page, avoids leaving to native camera app) ===================== -->
+  <div id="touchup-camera-modal" class="modal-backdrop tryon-backdrop">
+    <div class="tryon-stage">
+      <video id="touchup-camera-video" class="tryon-video" playsinline muted autoplay></video>
+      <div class="tryon-top">
+        <span class="tryon-product-pill" id="touchup-camera-title">오늘 룩 저장</span>
+        <button class="tryon-close-btn" id="touchup-camera-close-btn" aria-label="닫기"><i data-icon="x"></i></button>
+      </div>
+      <div class="tryon-status" id="touchup-camera-status">카메라를 준비하고 있어요...</div>
+      <div class="tryon-bottom" id="touchup-camera-shutter-wrap">
+        <button class="tryon-shutter-btn" id="touchup-camera-shutter-btn" aria-label="촬영하기"></button>
       </div>
     </div>
   </div>

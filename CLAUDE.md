@@ -44,7 +44,8 @@
 
 **구현 내용**:
 - `components/virtualTryOn.js`의 `analyzeLookColors`에 **T존(이마 랜드마크 10번 + 코끝 4번) 색 샘플링을 추가**(`tzone` 필드) — 유분/번들거림을 밝기(luminance)로 추정하는 데 씀. 기존 lip/eye/blush 읽기 로직은 그대로 재사용.
-- `view-result`의 "오늘 룩 저장하기"가 실제 사진 촬영(파일 입력, `<input capture="user">`)으로 바뀜 — `analyzeLookColors`로 색 분석 후 `localStorage`(`goun_touchup_look` 키)에 리사이즈된 사진(dataURL, 최대 480px) + 색상값 + 저장 시각을 저장. **계정이 아니라 브라우저에 저장되는 방식**이라 기기/브라우저를 바꾸면 초기화됨 — DB 저장은 하지 않기로 함 (MVP 단순화).
+- `view-result`의 "오늘 룩 저장하기"가 실제 사진 촬영으로 바뀜 — `analyzeLookColors`로 색 분석 후 `localStorage`(`goun_touchup_look` 키)에 리사이즈된 사진(dataURL, 최대 480px) + 색상값 + 저장 시각을 저장. **계정이 아니라 브라우저에 저장되는 방식**이라 기기/브라우저를 바꾸면 초기화됨 — DB 저장은 하지 않기로 함 (MVP 단순화).
+- **촬영 방식을 파일 입력(`<input capture="user">`, 네이티브 카메라 앱 호출)에서 페이지 내 `<video>` 라이브 카메라로 변경함 (버그 수정, 2026-09)**: 처음엔 룩파인더처럼 파일 입력 방식으로 만들었는데, 실기기 테스트에서 "지금" 사진을 찍고 네이티브 카메라의 "확인"을 누르면 리터치체크 결과가 아니라 **갑자기 홈 화면(+온보딩 안내 문구까지)이 뜨는 버그**가 발생함. 원인으로 추정되는 것: 파일 입력이 네이티브 카메라 앱을 열면서 탭이 백그라운드로 가는데, 일부 안드로이드 기기(특히 메모리 부족 시)는 이때 탭을 통째로 리로드해버려서 `goTo('touchup')`으로 활성화해뒀던 화면 상태가 날아가고 처음 화면(홈)으로 돌아가버림 — `localStorage`는 살아남지만 "지금 어떤 화면이 떠 있어야 하는지"는 날아감. **해결**: 뷰티랩 발라보기가 이미 쓰고 있는 `tryon-modal`과 같은 패턴으로, 네이티브 카메라 앱을 아예 안 거치고 `getUserMedia`로 페이지 안에서 바로 촬영하는 `touchup-camera-modal`을 새로 만들어서 "오늘 룩 저장"/"지금 사진 찍기" 둘 다 이걸로 통일함 (`components/gounAppLogic.js`의 `openTouchupCamera(mode)`/`handleTouchupSaveCapture`/`handleTouchupNowCapture`). 탭이 백그라운드로 나갈 일 자체가 없어져서 이 버그 원천 차단됨.
 - `view-touchup`은 4단계 상태로 재구성(`components/gounMarkup.js`): ① 저장된 룩 없음(`touchup-empty`, 스킨체크로 유도) ② 저장된 룩 있음 → "지금 사진 찍기" 유도(`touchup-step-now`) ③ 분석 중(`touchup-loading`) ④ 결과(`touchup-result`: 두 사진 나란히 + 유분/립 변화 태그 + 일치율 % + 되돌리는 방법 조언). `goTo('touchup')` 진입마다 `refreshTouchupView()`가 저장 여부를 확인해서 상태를 결정함 (`components/gounAppLogic.js`).
 - 판정 기준: 입술색 차이(색상거리) 40 초과 → "립 지워짐", 볼색 차이 35 초과 → 블러셔 조언, T존 밝기가 15 이상 밝아지면 → "유분 증가". 일치율 %는 이 세 지표의 평균으로 계산 (임의로 잡은 임계값이라 실제 써보고 너무 예민하거나 둔감하면 숫자 조정 필요).
 

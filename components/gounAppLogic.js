@@ -292,15 +292,20 @@ export function initGounApp(root, supabase) {
       }
     }, 250);
   });
-  /* ---------- Touch-up check: compare saved look vs now, using free MediaPipe color-diff ---------- */
+  /* ---------- Touch-up check: compare saved look vs now, using free MediaPipe color-diff ----------
+     Captures happen with an in-page <video> camera (like the 뷰티랩 발라보기 modal), not a native
+     file-picker/camera-app handoff — on some Android phones, backgrounding the tab to use the native
+     camera app gets the tab reclaimed, and coming back reloads the page and drops all in-flight state. */
   const TOUCHUP_STORAGE_KEY = 'goun_touchup_look';
 
-  function resizeToDataUrl(img, maxW) {
+  function resizeToDataUrl(source, maxW) {
+    const sw = source.naturalWidth || source.width;
+    const sh = source.naturalHeight || source.height;
     const canvas = document.createElement('canvas');
-    const scale = Math.min(1, maxW / img.naturalWidth);
-    canvas.width = img.naturalWidth * scale;
-    canvas.height = img.naturalHeight * scale;
-    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    const scale = Math.min(1, maxW / sw);
+    canvas.width = sw * scale;
+    canvas.height = sh * scale;
+    canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL('image/jpeg', 0.8);
   }
 
@@ -340,31 +345,6 @@ export function initGounApp(root, supabase) {
     showTouchupStep('now');
   }
 
-  document.getElementById('touchup-save-input')?.addEventListener('change', async function () {
-    const file = this.files?.[0];
-    if (!file) return;
-
-    try {
-      const url = URL.createObjectURL(file);
-      const img = await withTimeout(loadImage(url), 15000, '사진을 불러오는 데 시간이 너무 오래 걸려요');
-      const colors = await withTimeout(analyzeLookColors(img), 15000, '분석이 너무 오래 걸려요. 다시 시도해주세요');
-      if (!colors.faceFound) {
-        showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
-        return;
-      }
-      const dataUrl = resizeToDataUrl(img, 480);
-      localStorage.setItem(TOUCHUP_STORAGE_KEY, JSON.stringify({ dataUrl, colors, savedAt: Date.now() }));
-      showToast('오늘 룩을 저장했어요. 나중에 비교해보세요!');
-      document.getElementById('save-look-btn')?.classList.add('hidden');
-      document.getElementById('check-now-btn')?.classList.remove('hidden');
-    } catch (err) {
-      console.error('[touchup] save-error', err);
-      showToast('저장에 실패했어요. 다시 시도해주세요');
-    } finally {
-      this.value = '';
-    }
-  });
-
   function setTouchupNowError(msg) {
     const el = document.getElementById('touchup-now-error');
     if (!el) return;
@@ -372,14 +352,27 @@ export function initGounApp(root, supabase) {
     el.classList.toggle('hidden', !msg);
   }
 
-  document.getElementById('touchup-now-input')?.addEventListener('change', async function () {
-    const file = this.files?.[0];
+  async function handleTouchupSaveCapture(canvas) {
+    try {
+      const colors = await withTimeout(analyzeLookColors(canvas), 15000, '분석이 너무 오래 걸려요. 다시 시도해주세요');
+      if (!colors.faceFound) {
+        showToast('사진에서 얼굴을 찾지 못했어요. 다시 시도해주세요');
+        return;
+      }
+      const dataUrl = resizeToDataUrl(canvas, 480);
+      localStorage.setItem(TOUCHUP_STORAGE_KEY, JSON.stringify({ dataUrl, colors, savedAt: Date.now() }));
+      showToast('오늘 룩을 저장했어요. 나중에 비교해보세요!');
+      document.getElementById('save-look-btn')?.classList.add('hidden');
+      document.getElementById('check-now-btn')?.classList.remove('hidden');
+    } catch (err) {
+      console.error('[touchup] save-error', err);
+      showToast(`저장에 실패했어요: ${err?.message || err}`);
+    }
+  }
+
+  async function handleTouchupNowCapture(canvas) {
     const saved = loadTouchupSavedLook();
     setTouchupNowError('');
-    if (!file) {
-      setTouchupNowError('사진을 가져오지 못했어요. 다시 눌러서 촬영해주세요');
-      return;
-    }
     if (!saved) {
       setTouchupNowError('저장된 오늘의 룩을 찾지 못했어요. 스킨체크에서 다시 저장해주세요');
       return;
@@ -388,15 +381,13 @@ export function initGounApp(root, supabase) {
     showTouchupStep('loading');
 
     try {
-      const url = URL.createObjectURL(file);
-      const img = await withTimeout(loadImage(url), 15000, '사진을 불러오는 데 시간이 너무 오래 걸려요');
-      const now = await withTimeout(analyzeLookColors(img), 15000, '분석이 너무 오래 걸려요. 다시 시도해주세요');
+      const now = await withTimeout(analyzeLookColors(canvas), 15000, '분석이 너무 오래 걸려요. 다시 시도해주세요');
       if (!now.faceFound) {
         setTouchupNowError('사진에서 얼굴을 찾지 못했어요. 얼굴이 잘 보이게 다시 찍어주세요');
         showTouchupStep('now');
         return;
       }
-      const nowDataUrl = resizeToDataUrl(img, 480);
+      const nowDataUrl = resizeToDataUrl(canvas, 480);
 
       const LIP_FADE_THRESHOLD = 40;
       const BLUSH_FADE_THRESHOLD = 35;
@@ -449,9 +440,70 @@ export function initGounApp(root, supabase) {
       console.error('[touchup] compare-error', err);
       setTouchupNowError(`비교 중 오류가 났어요: ${err?.message || err}`);
       showTouchupStep('now');
-    } finally {
-      this.value = '';
     }
+  }
+
+  /* ---------- Touch-up check: in-page camera modal (shared by save & now capture) ---------- */
+  let touchupCameraStream = null;
+  let touchupCameraMode = null; // 'save' | 'now'
+
+  async function openTouchupCamera(mode) {
+    touchupCameraMode = mode;
+    const modal = document.getElementById('touchup-camera-modal');
+    const video = document.getElementById('touchup-camera-video');
+    const statusEl = document.getElementById('touchup-camera-status');
+    const title = document.getElementById('touchup-camera-title');
+    if (!modal || !video) return;
+
+    if (title) title.textContent = mode === 'save' ? '오늘 룩 저장' : '지금 사진 찍기';
+    statusEl.textContent = '카메라를 준비하고 있어요...';
+    statusEl.classList.remove('error');
+    modal.classList.add('show');
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      statusEl.textContent = '이 브라우저는 카메라를 지원하지 않아요';
+      statusEl.classList.add('error');
+      return;
+    }
+
+    try {
+      touchupCameraStream = await startCameraPreview(video);
+      statusEl.textContent = '얼굴이 잘 보이게 맞추고 촬영해주세요';
+    } catch (err) {
+      console.error('[touchup] camera-error', err);
+      statusEl.textContent = '카메라를 사용할 수 없어요. 브라우저 설정에서 카메라 권한을 허용해주세요';
+      statusEl.classList.add('error');
+    }
+  }
+
+  function closeTouchupCamera() {
+    document.getElementById('touchup-camera-modal')?.classList.remove('show');
+    stopStream(touchupCameraStream);
+    touchupCameraStream = null;
+  }
+
+  document.getElementById('save-look-btn')?.addEventListener('click', () => openTouchupCamera('save'));
+  document.getElementById('touchup-now-btn')?.addEventListener('click', () => openTouchupCamera('now'));
+  document.getElementById('touchup-camera-close-btn')?.addEventListener('click', closeTouchupCamera);
+
+  document.getElementById('touchup-camera-shutter-btn')?.addEventListener('click', async () => {
+    const video = document.getElementById('touchup-camera-video');
+    if (!video || !touchupCameraStream) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    const mode = touchupCameraMode;
+    closeTouchupCamera();
+
+    if (mode === 'save') await handleTouchupSaveCapture(canvas);
+    else await handleTouchupNowCapture(canvas);
   });
 
   document.getElementById('touchup-retry-btn')?.addEventListener('click', () => {
