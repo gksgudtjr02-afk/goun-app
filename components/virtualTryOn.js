@@ -354,3 +354,79 @@ export async function applyDetectedLook(imageEl, colors) {
   if (colors.blush) drawBlush(ctx, face, w, h, colors.blush);
   return { canvas, faceFound: true };
 }
+
+/* ---------- Background swap: cut the person out (free MediaPipe segmentation), composite onto a preset background ---------- */
+
+const SEGMENTER_MODEL_URL =
+  'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite';
+
+let segmenterPromise = null;
+
+async function createSegmenter(filesetResolver, delegate) {
+  const { ImageSegmenter } = await import('@mediapipe/tasks-vision');
+  return ImageSegmenter.createFromOptions(filesetResolver, {
+    baseOptions: { modelAssetPath: SEGMENTER_MODEL_URL, delegate },
+    runningMode: 'IMAGE',
+    outputCategoryMask: false,
+    outputConfidenceMasks: true,
+  });
+}
+
+// Separate lazy model from the face landmarker above — different task, loaded
+// only once a user actually taps a background preset (not on every photo).
+async function getImageSegmenter() {
+  if (!segmenterPromise) {
+    segmenterPromise = (async () => {
+      const { FilesetResolver } = await import('@mediapipe/tasks-vision');
+      const filesetResolver = await FilesetResolver.forVisionTasks(WASM_URL);
+      try {
+        return await createSegmenter(filesetResolver, 'GPU');
+      } catch {
+        return await createSegmenter(filesetResolver, 'CPU');
+      }
+    })();
+  }
+  return segmenterPromise;
+}
+
+/**
+ * Runs person segmentation on a canvas and returns a soft alpha mask
+ * (0 = background, 1 = person) the same pixel size as the source.
+ */
+export async function segmentPerson(sourceCanvas) {
+  const w = sourceCanvas.width;
+  const h = sourceCanvas.height;
+  const segmenter = await getImageSegmenter();
+  const result = segmenter.segment(sourceCanvas);
+  const mask = result.confidenceMasks[0].getAsFloat32Array();
+  result.confidenceMasks.forEach((m) => m.close());
+  return { mask, w, h };
+}
+
+/**
+ * Composites `sourceCanvas` onto `backgroundFill` (a color, gradient, or
+ * pattern usable as a canvas fillStyle) using a mask from segmentPerson().
+ * Returns a new canvas; the inputs are left untouched.
+ */
+export function compositeOntoBackground(sourceCanvas, mask, w, h, backgroundFill) {
+  const out = document.createElement('canvas');
+  out.width = w;
+  out.height = h;
+  const outCtx = out.getContext('2d');
+  outCtx.fillStyle = backgroundFill;
+  outCtx.fillRect(0, 0, w, h);
+  const bgData = outCtx.getImageData(0, 0, w, h);
+
+  const srcCtx = sourceCanvas.getContext('2d');
+  const srcData = srcCtx.getImageData(0, 0, w, h);
+
+  for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
+    const alpha = mask[i];
+    bgData.data[p] = srcData.data[p] * alpha + bgData.data[p] * (1 - alpha);
+    bgData.data[p + 1] = srcData.data[p + 1] * alpha + bgData.data[p + 1] * (1 - alpha);
+    bgData.data[p + 2] = srcData.data[p + 2] * alpha + bgData.data[p + 2] * (1 - alpha);
+    bgData.data[p + 3] = 255;
+  }
+  outCtx.putImageData(bgData, 0, 0);
+  return out;
+}

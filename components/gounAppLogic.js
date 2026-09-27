@@ -1,4 +1,4 @@
-import { startCameraPreview, stopStream, capturePhotoWithMakeup, analyzeLookColors, applyDetectedLook } from './virtualTryOn';
+import { startCameraPreview, stopStream, capturePhotoWithMakeup, analyzeLookColors, applyDetectedLook, segmentPerson, compositeOntoBackground } from './virtualTryOn';
 
 /* ---------- Icon system: inline SVG, no external font dependency ---------- */
 const ICONS = {
@@ -1648,6 +1648,15 @@ export function initGounApp(root, supabase) {
   let lookfinderColors = null;
   let lookfinderRefUrl = null;
   let lookfinderResultCanvas = null;
+  let lookfinderBaseCanvas = null; // 배경 적용 전 원본(화장 적용된) 캔버스 — 배경 프리셋 바꿀 때마다 여기서 다시 합성
+  let lookfinderMask = null; // segmentPerson() 결과 캐시 — 배경 프리셋끼리 전환할 때 매번 다시 분석하지 않도록
+
+  // 배경 프리셋: 10~20대 타깃이라 톤다운된 파스텔보다 또렷하고 화사한 그라데이션으로.
+  const LOOKFINDER_BG_PRESETS = {
+    coral: ['#FF4D6D', '#7C5CFC'],
+    purple: ['#B39DFF', '#5E3FE0'],
+    mint: ['#3DE8C0', '#5B8DEF'],
+  };
 
   function showLookfinderStep(step) {
     document.getElementById('lookfinder-step1')?.classList.toggle('hidden', step !== 'step1');
@@ -1660,6 +1669,9 @@ export function initGounApp(root, supabase) {
     lookfinderColors = null;
     lookfinderRefUrl = null;
     lookfinderResultCanvas = null;
+    lookfinderBaseCanvas = null;
+    lookfinderMask = null;
+    document.querySelectorAll('#lookfinder-bg-chips .chip').forEach(c => c.classList.toggle('active', c.getAttribute('data-bg') === 'none'));
     showLookfinderStep('step1');
     const refInput = document.getElementById('lookfinder-ref-input');
     if (refInput) refInput.value = '';
@@ -1735,6 +1747,9 @@ export function initGounApp(root, supabase) {
       document.getElementById('lookfinder-ref-img').src = lookfinderRefUrl;
       document.getElementById('lookfinder-selfie-img').src = resultCanvas.toDataURL('image/jpeg', 0.92);
       lookfinderResultCanvas = resultCanvas;
+      lookfinderBaseCanvas = resultCanvas;
+      lookfinderMask = null;
+      document.querySelectorAll('#lookfinder-bg-chips .chip').forEach(c => c.classList.toggle('active', c.getAttribute('data-bg') === 'none'));
       const matches = document.getElementById('lookfinder-matches');
       if (matches) {
         matches.innerHTML = ['lip', 'eye', 'blush'].map(type => renderLookfinderMatch(type, lookfinderColors[type])).join('');
@@ -1752,6 +1767,40 @@ export function initGounApp(root, supabase) {
       showLookfinderStep('step2');
     }
   }
+
+  document.querySelectorAll('#lookfinder-bg-chips .chip').forEach(chip => {
+    chip.addEventListener('click', async () => {
+      if (!lookfinderBaseCanvas) return;
+      const key = chip.getAttribute('data-bg');
+      document.querySelectorAll('#lookfinder-bg-chips .chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+
+      if (key === 'none') {
+        lookfinderResultCanvas = lookfinderBaseCanvas;
+        document.getElementById('lookfinder-selfie-img').src = lookfinderBaseCanvas.toDataURL('image/jpeg', 0.92);
+        return;
+      }
+
+      chip.disabled = true;
+      try {
+        if (!lookfinderMask) {
+          lookfinderMask = await withTimeout(segmentPerson(lookfinderBaseCanvas), 15000, '배경 분리가 너무 오래 걸려요. 다시 시도해주세요');
+        }
+        const [c1, c2] = LOOKFINDER_BG_PRESETS[key];
+        const gradient = document.createElement('canvas').getContext('2d').createLinearGradient(0, 0, 0, lookfinderMask.h);
+        gradient.addColorStop(0, c1);
+        gradient.addColorStop(1, c2);
+        const composited = compositeOntoBackground(lookfinderBaseCanvas, lookfinderMask.mask, lookfinderMask.w, lookfinderMask.h, gradient);
+        lookfinderResultCanvas = composited;
+        document.getElementById('lookfinder-selfie-img').src = composited.toDataURL('image/jpeg', 0.92);
+      } catch (err) {
+        console.error('[lookfinder] bg-error', err);
+        showToast(`배경 적용에 실패했어요: ${err?.message || err}`);
+      } finally {
+        chip.disabled = false;
+      }
+    });
+  });
 
   document.getElementById('lookfinder-post-btn')?.addEventListener('click', async () => {
     if (!currentUserId || !lookfinderResultCanvas) return;
