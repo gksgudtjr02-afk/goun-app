@@ -536,7 +536,7 @@ export const GOUN_MARKUP = `
       </div>
 
       <p class="muted center hidden" id="powder-empty" style="padding:30px 0;">
-        아직 올린 결과가 없어요.<br>인플루언서 화장법이나 뷰티랩에서 발라본 결과를 올려보세요!
+        아직 올린 결과가 없어요.<br>"인플루언서 화장법"에서 사진을 올리고 결과가 나오면 "고운에 올리기"를 눌러보세요!
       </p>
       <div class="powder-grid" id="powder-grid"></div>
     </div>
