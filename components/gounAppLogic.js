@@ -304,6 +304,13 @@ export function initGounApp(root, supabase) {
     return canvas.toDataURL('image/jpeg', 0.8);
   }
 
+  function withTimeout(promise, ms, message) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+    ]);
+  }
+
   function loadTouchupSavedLook() {
     try {
       const raw = localStorage.getItem(TOUCHUP_STORAGE_KEY);
@@ -339,8 +346,8 @@ export function initGounApp(root, supabase) {
 
     try {
       const url = URL.createObjectURL(file);
-      const img = await loadImage(url);
-      const colors = await analyzeLookColors(img);
+      const img = await withTimeout(loadImage(url), 15000, '사진을 불러오는 데 시간이 너무 오래 걸려요');
+      const colors = await withTimeout(analyzeLookColors(img), 15000, '분석이 너무 오래 걸려요. 다시 시도해주세요');
       if (!colors.faceFound) {
         showToast('사진에서 얼굴을 찾지 못했어요. 다른 사진으로 시도해주세요');
         return;
@@ -382,8 +389,8 @@ export function initGounApp(root, supabase) {
 
     try {
       const url = URL.createObjectURL(file);
-      const img = await loadImage(url);
-      const now = await analyzeLookColors(img);
+      const img = await withTimeout(loadImage(url), 15000, '사진을 불러오는 데 시간이 너무 오래 걸려요');
+      const now = await withTimeout(analyzeLookColors(img), 15000, '분석이 너무 오래 걸려요. 다시 시도해주세요');
       if (!now.faceFound) {
         setTouchupNowError('사진에서 얼굴을 찾지 못했어요. 얼굴이 잘 보이게 다시 찍어주세요');
         showTouchupStep('now');
