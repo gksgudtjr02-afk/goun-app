@@ -42,7 +42,8 @@ const ICONS = {
   'trophy':'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0z"/><path d="M17 5h3a2 2 0 01-2 4M7 5H4a2 2 0 002 4"/>',
   'alert':'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>',
   'log-out':'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
-  'eye':'<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>'
+  'eye':'<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>',
+  'mirror':'<circle cx="12" cy="9" r="6"/><path d="M12 15v6M9 21h6"/>'
 };
 
 /* ---------- Feed data: loaded from Supabase, with a mock fallback ---------- */
@@ -176,9 +177,14 @@ export function initGounApp(root, supabase) {
     filtered.forEach(v => {
       const item = document.createElement('div');
       item.className = 'grid-item';
+      if (v.image_url) {
+        item.style.backgroundImage = `url(${v.image_url})`;
+        item.style.backgroundSize = 'cover';
+        item.style.backgroundPosition = 'center';
+      }
       item.innerHTML = `
-        <div class="thumb-fill" data-icon="user"></div>
-        <span class="grid-flag">${v.flag}</span>
+        ${v.image_url ? '' : '<div class="thumb-fill" data-icon="user"></div>'}
+        ${v.flag ? `<span class="grid-flag">${v.flag}</span>` : ''}
         ${v.hot ? '<span class="grid-badge">인기</span>' : ''}
         <span class="grid-like"><span data-icon="heart"></span> ${v.likes}</span>
       `;
@@ -188,12 +194,27 @@ export function initGounApp(root, supabase) {
     paintIcons(grid);
   }
 
+  // 파우더룸에 실제로 올려진 결과(feed_posts)가 있으면 그걸 홈 피드로 보여주고,
+  // 아직 하나도 없으면(초기 상태) 기존 목업 데이터로 폴백한다.
   async function loadFeed() {
     const { data, error } = await supabase
-      .from('feed_items')
-      .select('flag, name, likes, cat, hot, caption')
-      .order('created_at', { ascending: false });
-    FEED = (!error && data && data.length) ? data : FEED_FALLBACK;
+      .from('feed_posts')
+      .select('handle, source_type, image_url, caption, products, likes')
+      .order('created_at', { ascending: false })
+      .limit(60);
+    if (!error && data && data.length) {
+      FEED = data.map(row => ({
+        flag: '',
+        name: row.handle ? `@${row.handle}` : '고운 유저',
+        likes: String(row.likes ?? 0),
+        cat: row.products?.[0]?.type || 'base',
+        hot: (row.likes ?? 0) >= 50,
+        caption: row.caption || (row.source_type === 'lookfinder' ? '인플루언서 화장법 따라하기 결과' : '뷰티랩 발라보기 결과'),
+        image_url: row.image_url,
+      }));
+    } else {
+      FEED = FEED_FALLBACK;
+    }
     const activeFilter = document.querySelector('.chip.active')?.getAttribute('data-filter') || 'all';
     renderGrid(activeFilter, document.getElementById('feed-search-input')?.value || '');
   }
@@ -207,9 +228,10 @@ export function initGounApp(root, supabase) {
     if (navBtn) navBtn.classList.add('active');
     const bottomNav = document.getElementById('bottom-nav');
     if (bottomNav) {
-      bottomNav.style.display = ['home', 'camera', 'lab', 'mypage'].includes(id) ? 'flex' : 'none';
+      bottomNav.style.display = ['home', 'ranking', 'powderroom', 'mypage'].includes(id) ? 'flex' : 'none';
     }
     if (id === 'touchup') refreshTouchupView();
+    if (id === 'powderroom') loadPowderRoom();
     window.scrollTo(0, 0);
   }
 
@@ -265,6 +287,16 @@ export function initGounApp(root, supabase) {
     document.getElementById('player-caption').textContent = v.caption;
     document.getElementById('like-count').textContent = v.likes;
     document.getElementById('like-btn').classList.remove('liked');
+    const photoEl = document.getElementById('player-photo');
+    const avatarEl = document.getElementById('player-avatar');
+    if (v.image_url) {
+      photoEl.src = v.image_url;
+      photoEl.classList.remove('hidden');
+      avatarEl.classList.add('hidden');
+    } else {
+      photoEl.classList.add('hidden');
+      avatarEl.classList.remove('hidden');
+    }
     goTo('player');
   }
   document.getElementById('player-close')?.addEventListener('click', () => goTo('home'));
@@ -1096,6 +1128,7 @@ export function initGounApp(root, supabase) {
     if (!authListenerActive) return;
     if (event === 'SIGNED_IN' && session) {
       currentUserId = session.user.id;
+      currentUserEmail = session.user.email;
       updateProfileUI(session.user);
       loadWishlist(currentUserId);
       loadProfilePoints(currentUserId);
@@ -1104,8 +1137,10 @@ export function initGounApp(root, supabase) {
       goTo('home');
     } else if (event === 'SIGNED_OUT') {
       currentUserId = null;
+      currentUserEmail = null;
       wishlist = [];
       creatorHandle = null;
+      creatorBio = null;
       creatorPicks = [];
       updateProfileUI(null);
       renderWishlist();
@@ -1122,6 +1157,7 @@ export function initGounApp(root, supabase) {
   supabase.auth.getSession().then(({ data: { session } }) => {
     if (session) {
       currentUserId = session.user.id;
+      currentUserEmail = session.user.email;
       updateProfileUI(session.user);
       loadWishlist(currentUserId);
       loadProfilePoints(currentUserId);
@@ -1233,6 +1269,7 @@ export function initGounApp(root, supabase) {
   /* ---------- Wishlist (persisted in Supabase, per user) ---------- */
   let wishlist = [];
   let currentUserId = null;
+  let currentUserEmail = null;
 
   async function loadWishlist(userId) {
     const { data, error } = await supabase
@@ -1307,17 +1344,55 @@ export function initGounApp(root, supabase) {
     paintIcons(list);
   }
 
-  /* ---------- Creator public page ("내 추천 페이지") ---------- */
+  /* ---------- Creator public page / 파우더룸 ("내 추천 페이지") ---------- */
   let creatorHandle = null;
+  let creatorBio = null;
   let creatorPicks = [];
 
+  function slugifyHandle(base) {
+    let slug = (base || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 16);
+    if (slug.length < 3) slug = `goun${slug}`;
+    return slug;
+  }
+
+  // 파우더룸은 모든 유저에게 기본 제공되므로, creator_pages에 아직 행이 없으면
+  // 이메일 아이디에서 만든 핸들로 자동 생성한다 (수동 opt-in 단계 없음).
+  async function ensureCreatorHandle(userId, email) {
+    const base = slugifyHandle(email ? email.split('@')[0] : 'user');
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const handle = attempt === 0 ? base : `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+      const { error } = await supabase.from('creator_pages').insert({ user_id: userId, handle });
+      if (!error) return handle;
+      if (error.code === '23505') {
+        // user_id already has a row (e.g. a concurrent tab created it first) → use that one;
+        // otherwise it was the handle string itself that collided → retry with a new suffix.
+        const { data: existing } = await supabase
+          .from('creator_pages')
+          .select('handle')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (existing?.handle) return existing.handle;
+        continue;
+      }
+      console.error('[powderroom] ensure-handle-error', error);
+      return null;
+    }
+    return null;
+  }
+
   async function loadCreatorPage(userId) {
-    const { data: page } = await supabase
+    let { data: page } = await supabase
       .from('creator_pages')
       .select('handle, bio')
       .eq('user_id', userId)
       .maybeSingle();
+
+    if (!page) {
+      const handle = await ensureCreatorHandle(userId, currentUserEmail);
+      page = handle ? { handle, bio: null } : null;
+    }
     creatorHandle = page?.handle || null;
+    creatorBio = page?.bio || null;
 
     const handleInput = document.getElementById('creatorpage-handle-input');
     const bioInput = document.getElementById('creatorpage-bio-input');
@@ -1339,6 +1414,73 @@ export function initGounApp(root, supabase) {
     creatorPicks = picks || [];
     renderCreatorProductList();
   }
+
+  // 룩파인더/뷰티랩 결과 캔버스를 Storage에 올리고 feed_posts에 기록해서
+  // 홈 피드 + 내 파우더룸에 나타나게 한다.
+  async function postToFeed({ canvas, sourceType, caption, products }) {
+    if (!currentUserId) throw new Error('no-user');
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.88));
+    if (!blob) throw new Error('canvas-to-blob-failed');
+
+    const path = `${currentUserId}/${Date.now()}.jpg`;
+    const { error: uploadError } = await supabase.storage
+      .from('feed-photos')
+      .upload(path, blob, { contentType: 'image/jpeg' });
+    if (uploadError) throw uploadError;
+
+    const { data: pub } = supabase.storage.from('feed-photos').getPublicUrl(path);
+    const { error: insertError } = await supabase.from('feed_posts').insert({
+      user_id: currentUserId,
+      handle: creatorHandle,
+      source_type: sourceType,
+      image_url: pub.publicUrl,
+      caption,
+      products,
+    });
+    if (insertError) throw insertError;
+
+    loadFeed();
+    if (document.getElementById('view-powderroom')?.classList.contains('active')) loadPowderRoom();
+  }
+
+  async function loadPowderRoom() {
+    if (!currentUserId) return;
+    const avatarEl = document.getElementById('powder-avatar');
+    const handleEl = document.getElementById('powder-handle');
+    const bioEl = document.getElementById('powder-bio');
+    const statsEl = document.getElementById('powder-stats');
+    if (avatarEl) avatarEl.textContent = (creatorHandle || '고운')[0].toUpperCase();
+    if (handleEl) handleEl.textContent = creatorHandle ? `@${creatorHandle}` : '설정 중...';
+    if (bioEl) bioEl.textContent = creatorBio || '아직 소개가 없어요';
+
+    const { data: posts } = await supabase
+      .from('feed_posts')
+      .select('id, source_type, image_url, likes')
+      .eq('user_id', currentUserId)
+      .order('created_at', { ascending: false });
+    const list = posts || [];
+    const totalLikes = list.reduce((sum, p) => sum + (p.likes || 0), 0);
+    if (statsEl) statsEl.textContent = `게시물 ${list.length} · 좋아요 ${totalLikes}`;
+    const countEl = document.getElementById('powder-count');
+    if (countEl) countEl.textContent = list.length ? `${list.length}개` : '';
+
+    const grid = document.getElementById('powder-grid');
+    const emptyEl = document.getElementById('powder-empty');
+    if (!grid) return;
+    emptyEl?.classList.toggle('hidden', list.length > 0);
+    grid.innerHTML = list.map(p => `
+      <div class="powder-shot" style="background-image:url(${p.image_url});background-size:cover;background-position:center;">
+        <span class="dot" style="background:${p.source_type === 'lookfinder' ? 'var(--coral)' : 'var(--purple)'};"></span>
+        <span class="like"><span data-icon="heart"></span>${p.likes || 0}</span>
+      </div>
+    `).join('');
+    paintIcons(grid);
+  }
+
+  document.getElementById('powder-share-btn')?.addEventListener('click', () => {
+    if (!creatorHandle) { showToast('파우더룸 링크를 준비하고 있어요, 잠시 후 다시 시도해주세요'); return; }
+    shareContent('내 파우더룸을 공유해요', '고운에서 발라본 결과들을 구경해보세요 ✨ #고운 #GOUN #파우더룸', `${window.location.origin}/c/${creatorHandle}`);
+  });
 
   function renderCreatorProductList() {
     const list = document.getElementById('creatorpage-product-list');
@@ -1481,6 +1623,7 @@ export function initGounApp(root, supabase) {
 
   let lookfinderColors = null;
   let lookfinderRefUrl = null;
+  let lookfinderResultCanvas = null;
 
   function showLookfinderStep(step) {
     document.getElementById('lookfinder-step1')?.classList.toggle('hidden', step !== 'step1');
@@ -1492,6 +1635,7 @@ export function initGounApp(root, supabase) {
   function resetLookfinder() {
     lookfinderColors = null;
     lookfinderRefUrl = null;
+    lookfinderResultCanvas = null;
     showLookfinderStep('step1');
     const refInput = document.getElementById('lookfinder-ref-input');
     if (refInput) refInput.value = '';
@@ -1563,6 +1707,7 @@ export function initGounApp(root, supabase) {
       }
       document.getElementById('lookfinder-ref-img').src = lookfinderRefUrl;
       document.getElementById('lookfinder-selfie-img').src = resultCanvas.toDataURL('image/jpeg', 0.92);
+      lookfinderResultCanvas = resultCanvas;
       const matches = document.getElementById('lookfinder-matches');
       if (matches) {
         matches.innerHTML = ['lip', 'eye', 'blush'].map(type => renderLookfinderMatch(type, lookfinderColors[type])).join('');
@@ -1580,6 +1725,30 @@ export function initGounApp(root, supabase) {
       showLookfinderStep('step2');
     }
   }
+
+  document.getElementById('lookfinder-post-btn')?.addEventListener('click', async () => {
+    if (!currentUserId || !lookfinderResultCanvas) return;
+    const btn = document.getElementById('lookfinder-post-btn');
+    btn.disabled = true;
+    try {
+      const products = ['lip', 'eye', 'blush']
+        .map(type => lookfinderColors?.[type] ? findClosestProduct(type, lookfinderColors[type]) : null)
+        .filter(Boolean)
+        .map(p => ({ brand: p.brand, name: p.name, price: p.price, color: p.color, type: p.type }));
+      await postToFeed({
+        canvas: lookfinderResultCanvas,
+        sourceType: 'lookfinder',
+        caption: '인플루언서 화장법 따라하기 결과',
+        products,
+      });
+      showToast('파우더룸에 올렸어요!');
+    } catch (err) {
+      console.error('[lookfinder] post-error', err);
+      showToast('올리기에 실패했어요. 다시 시도해주세요');
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   document.getElementById('lookfinder-share-btn')?.addEventListener('click', () => {
     shareContent('고운에서 인플루언서 화장법 따라해봤어요', '나도 이 룩 따라할 수 있을까? 고운에서 비슷한 제품도 바로 찾아줘요 ✨ #고운 #GOUN');

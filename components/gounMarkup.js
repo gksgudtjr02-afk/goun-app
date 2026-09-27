@@ -117,7 +117,8 @@ export const GOUN_MARKUP = `
     </div>
 
     <div class="player-stage">
-      <div class="player-avatar"><i data-icon="user"></i></div>
+      <div class="player-avatar" id="player-avatar"><i data-icon="user"></i></div>
+      <img class="player-photo hidden" id="player-photo" alt="">
     </div>
 
     <div class="player-side">
@@ -318,8 +319,8 @@ export const GOUN_MARKUP = `
   <!-- ===================== 3g. WEEKLY RANKING ===================== -->
   <section id="view-ranking" class="view">
     <header class="sub-header">
-      <button class="icon-btn" data-nav="home"><i data-icon="chevron-left"></i></button>
-      <span>주간 랭킹</span>
+      <span class="spacer"></span>
+      <span>인기</span>
       <span class="spacer"></span>
     </header>
 
@@ -410,7 +411,7 @@ export const GOUN_MARKUP = `
   <!-- ===================== 4. VIRTUAL BEAUTY LAB ===================== -->
   <section id="view-lab" class="view">
     <header class="sub-header">
-      <span></span>
+      <button class="icon-btn" data-nav="powderroom"><i data-icon="chevron-left"></i></button>
       <span>AI 뷰티랩</span>
       <span class="ticket-pill"><i data-icon="ticket"></i> 티켓 1장</span>
     </header>
@@ -491,11 +492,53 @@ export const GOUN_MARKUP = `
 
         <div id="lookfinder-matches"></div>
 
-        <button class="btn-primary btn-block" id="lookfinder-share-btn" style="margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <button class="btn-primary btn-block" id="lookfinder-post-btn" style="margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <i data-icon="mirror"></i> 고운에 올리기
+        </button>
+        <button class="btn-outline btn-block" id="lookfinder-share-btn" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;">
           <i data-icon="share"></i> 결과 공유하기
         </button>
-        <button class="btn-outline btn-block" id="lookfinder-retry-btn" style="margin-top:8px;">처음부터 다시 하기</button>
+        <button class="btn-text btn-block" id="lookfinder-retry-btn" style="margin-top:4px;">처음부터 다시 하기</button>
       </div>
+    </div>
+  </section>
+
+  <!-- ===================== 4c. POWDER ROOM ("파우더룸") ===================== -->
+  <section id="view-powderroom" class="view">
+    <header class="sub-header">
+      <span class="spacer"></span>
+      <span>파우더룸</span>
+      <button class="icon-btn" id="powder-share-btn" aria-label="공유"><i data-icon="share"></i></button>
+    </header>
+
+    <div class="scroll-pad">
+      <div class="profile-row">
+        <div class="avatar-circle" id="powder-avatar">민</div>
+        <div style="flex-grow:1;min-width:0;">
+          <p class="profile-name" id="powder-handle">@내핸들</p>
+          <p class="muted small" id="powder-bio">아직 소개가 없어요</p>
+          <p class="muted small" id="powder-stats" style="margin-top:2px;"></p>
+        </div>
+      </div>
+
+      <div class="powder-cta-row">
+        <button class="btn-primary" id="powder-lab-btn" data-nav="lab"><i data-icon="sparkles"></i> 뷰티랩에서 발라보기</button>
+        <button class="btn-primary" id="powder-lookfinder-btn" data-nav="lookfinder"><i data-icon="camera"></i> 인플루언서 화장법</button>
+      </div>
+
+      <button class="btn-outline btn-block" id="powder-edit-btn" data-nav="creatorpage" style="margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <i data-icon="tag"></i> 링크 · 추천 제품 관리
+      </button>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <h3 class="section-title" style="margin:0;">내가 올려본 결과</h3>
+        <span class="muted small" id="powder-count"></span>
+      </div>
+
+      <p class="muted center hidden" id="powder-empty" style="padding:30px 0;">
+        아직 올린 결과가 없어요.<br>인플루언서 화장법이나 뷰티랩에서 발라본 결과를 올려보세요!
+      </p>
+      <div class="powder-grid" id="powder-grid"></div>
     </div>
   </section>
 
@@ -592,9 +635,14 @@ export const GOUN_MARKUP = `
       <div class="history-list" id="history-list"></div>
       <p class="muted center small hidden" id="history-empty">아직 포인트 내역이 없어요</p>
 
+      <button class="advertiser-link" data-nav="powderroom">
+        <span>내가 발라본 결과 모아보기</span>
+        <span class="advertiser-link-cta">내 파우더룸 가기 <i data-icon="chevron-right"></i></span>
+      </button>
+
       <button class="advertiser-link" data-nav="creatorpage">
         <span>제품 추천하고 커미션 받기</span>
-        <span class="advertiser-link-cta">내 추천 페이지 만들기 <i data-icon="chevron-right"></i></span>
+        <span class="advertiser-link-cta">링크 · 추천 제품 관리 <i data-icon="chevron-right"></i></span>
       </button>
 
       <button class="advertiser-link" data-nav="adinquiry">
@@ -610,12 +658,12 @@ export const GOUN_MARKUP = `
   <section id="view-creatorpage" class="view">
     <header class="sub-header">
       <button class="icon-btn" data-nav="mypage"><i data-icon="chevron-left"></i></button>
-      <span>내 추천 페이지</span>
+      <span>파우더룸 설정</span>
       <span class="spacer"></span>
     </header>
 
     <div class="scroll-pad">
-      <p class="muted" style="margin-bottom:16px;">내 제품 추천을 모아서 공개 페이지를 만들어요. 인스타그램 프로필 링크에 붙여넣기 좋아요.</p>
+      <p class="muted" style="margin-bottom:16px;">파우더룸의 링크 주소·소개와, 추천할 제품을 관리해요. 인스타그램 프로필 링크에 붙여넣기 좋아요.</p>
 
       <div id="creatorpage-setup">
         <div class="ad-field-group">
@@ -811,8 +859,8 @@ export const GOUN_MARKUP = `
   <!-- ===================== BOTTOM NAV ===================== -->
   <nav id="bottom-nav" class="bottom-nav">
     <button class="nav-btn active" data-nav="home"><i data-icon="home"></i><span>홈</span></button>
-    <button class="nav-btn" data-nav="camera"><i data-icon="camera"></i><span>스킨체크</span></button>
-    <button class="nav-btn" data-nav="lab"><i data-icon="sparkles"></i><span>뷰티랩</span></button>
+    <button class="nav-btn" data-nav="ranking"><i data-icon="flame"></i><span>인기</span></button>
+    <button class="nav-btn" data-nav="powderroom"><i data-icon="mirror"></i><span>파우더룸</span></button>
     <button class="nav-btn" data-nav="mypage"><i data-icon="user"></i><span>마이</span></button>
   </nav>
 

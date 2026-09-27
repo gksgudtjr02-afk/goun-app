@@ -26,6 +26,13 @@ export default async function CreatorPage({ params }) {
     .eq("user_id", page.user_id)
     .order("created_at", { ascending: true });
 
+  const { data: posts } = await supabase
+    .from("feed_posts")
+    .select("image_url, source_type, likes")
+    .eq("user_id", page.user_id)
+    .order("created_at", { ascending: false })
+    .limit(30);
+
   return (
     <div className="creator-page">
       <header className="creator-page-header">
@@ -34,6 +41,20 @@ export default async function CreatorPage({ params }) {
         <h1>@{page.handle}</h1>
         {page.bio && <p className="creator-page-bio">{page.bio}</p>}
       </header>
+
+      {(posts || []).length > 0 && (
+        <div className="creator-page-shots">
+          {posts.map((p, i) => (
+            <div
+              key={i}
+              className="creator-page-shot"
+              style={{ backgroundImage: `url(${p.image_url})` }}
+            >
+              <span className="creator-page-shot-like">♥ {p.likes || 0}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="creator-page-list">
         {(picks || []).length === 0 && (
