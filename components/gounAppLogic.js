@@ -310,6 +310,12 @@ export function initGounApp(root, supabase) {
       photoEl.classList.add('hidden');
       avatarEl.classList.remove('hidden');
     }
+    const swatchesEl = document.getElementById('player-swatches');
+    if (swatchesEl) {
+      swatchesEl.innerHTML = (v.products || [])
+        .map(p => `<span class="grid-swatch" style="background:${p.color}" title="${p.brand} · ${p.name}"></span>`)
+        .join('');
+    }
     const firstProduct = v.products?.[0];
     document.getElementById('player-buy-btn')?.classList.toggle('hidden', !firstProduct);
     document.getElementById('player-buy-pill')?.classList.toggle('hidden', !firstProduct);
@@ -1480,7 +1486,7 @@ export function initGounApp(root, supabase) {
 
     const { data: posts } = await supabase
       .from('feed_posts')
-      .select('id, source_type, image_url, likes')
+      .select('id, source_type, image_url, products, likes')
       .eq('user_id', currentUserId)
       .order('created_at', { ascending: false });
     const list = posts || [];
@@ -1496,6 +1502,7 @@ export function initGounApp(root, supabase) {
     grid.innerHTML = list.map(p => `
       <div class="powder-shot" style="background-image:url(${p.image_url});background-size:cover;background-position:center;">
         <span class="dot" style="background:${p.source_type === 'lookfinder' ? 'var(--coral)' : 'var(--purple)'};"></span>
+        ${p.products?.length ? `<span class="powder-shot-swatches">${p.products.map(pr => `<span class="grid-swatch" style="background:${pr.color}" title="${pr.brand} · ${pr.name}"></span>`).join('')}</span>` : ''}
         <span class="like"><span data-icon="heart"></span>${p.likes || 0}</span>
       </div>
     `).join('');

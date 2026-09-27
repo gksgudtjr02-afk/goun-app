@@ -436,6 +436,7 @@ html,body{
   color:#fff; font-size:9.5px; font-weight:700; text-shadow:0 1px 3px rgba(0,0,0,.6);
 }
 .powder-shot .like i{ font-size:10px; }
+.powder-shot-swatches{ position:absolute; bottom:4px; right:5px; display:flex; gap:3px; }
 
 .invite-card{ background: linear-gradient(135deg, #EEE9FF, #FFE7EC); border-radius: var(--radius-lg); padding:18px; margin-bottom:22px; }
 .invite-card-top{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
