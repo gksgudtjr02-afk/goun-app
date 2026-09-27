@@ -123,14 +123,14 @@ export const GOUN_MARKUP = `
 
     <div class="player-side">
       <button class="side-btn" id="like-btn"><i data-icon="heart"></i><span id="like-count">12.4k</span></button>
-      <button class="side-btn"><i data-icon="message-circle"></i><span>832</span></button>
-      <button class="side-btn"><i data-icon="shopping-bag"></i><span>구매</span></button>
+      <button class="side-btn"><i data-icon="message-circle"></i><span id="comment-count">832</span></button>
+      <button class="side-btn hidden" id="player-buy-btn"><i data-icon="shopping-bag"></i><span>구매</span></button>
       <button class="side-btn" id="player-share-btn"><i data-icon="share"></i><span>공유</span></button>
     </div>
 
     <div class="player-bottom">
       <p class="player-caption" id="player-caption">"이 쿠션 하나로 끝! 완전 강추"</p>
-      <button class="buy-pill"><i data-icon="shopping-cart"></i> 올리브영에서 바로 구매</button>
+      <button class="buy-pill hidden" id="player-buy-pill"><i data-icon="shopping-cart"></i> <span id="player-buy-text">구매하러 가기</span></button>
       <button class="btn-primary btn-block try-btn" id="try-look-btn"><i data-icon="wand"></i> 이 화장법 따라해보기</button>
     </div>
   </section>

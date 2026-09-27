@@ -219,6 +219,7 @@ export function initGounApp(root, supabase) {
         hot: (row.likes ?? 0) >= 50,
         caption: row.caption || (row.source_type === 'lookfinder' ? '인플루언서 화장법 따라하기 결과' : '뷰티랩 발라보기 결과'),
         productLine: row.products?.[0] ? `${row.products[0].brand} · ${row.products[0].price}` : '',
+        products: row.products || [],
         image_url: row.image_url,
       }));
     } else {
@@ -296,6 +297,8 @@ export function initGounApp(root, supabase) {
     document.getElementById('player-caption').textContent = v.caption;
     document.getElementById('like-count').textContent = v.likes;
     document.getElementById('like-btn').classList.remove('liked');
+    // 댓글 기능은 아직 없음 — 실제 게시물은 정직하게 0, 옛 영상 목업 카드는 그대로 데모 숫자 유지.
+    document.getElementById('comment-count').textContent = v.image_url ? '0' : '832';
     const photoEl = document.getElementById('player-photo');
     const avatarEl = document.getElementById('player-avatar');
     if (v.image_url) {
@@ -306,12 +309,24 @@ export function initGounApp(root, supabase) {
       photoEl.classList.add('hidden');
       avatarEl.classList.remove('hidden');
     }
+    const firstProduct = v.products?.[0];
+    document.getElementById('player-buy-btn')?.classList.toggle('hidden', !firstProduct);
+    document.getElementById('player-buy-pill')?.classList.toggle('hidden', !firstProduct);
+    const buyTextEl = document.getElementById('player-buy-text');
+    if (buyTextEl && firstProduct) buyTextEl.textContent = `${firstProduct.brand} · ${firstProduct.name} 구매하러 가기`;
     goTo('player');
   }
   document.getElementById('player-close')?.addEventListener('click', () => goTo('home'));
   document.getElementById('like-btn')?.addEventListener('click', function () {
     this.classList.toggle('liked');
   });
+  function openPlayerBuyLink() {
+    const product = currentVideo?.products?.[0];
+    if (!product) return;
+    window.open(`https://www.coupang.com/np/search?q=${encodeURIComponent(product.name)}`, '_blank', 'noopener,noreferrer');
+  }
+  document.getElementById('player-buy-btn')?.addEventListener('click', openPlayerBuyLink);
+  document.getElementById('player-buy-pill')?.addEventListener('click', openPlayerBuyLink);
   document.getElementById('try-look-btn')?.addEventListener('click', () => {
     showToast('이 룩의 컬러를 가상 연구소에 불러왔어요');
     goTo('lab');
