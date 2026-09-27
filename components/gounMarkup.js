@@ -355,13 +355,15 @@ export const GOUN_MARKUP = `
     </header>
 
     <div class="scroll-pad">
-      <div id="touchup-empty" class="hidden center" style="padding:60px 0;">
+      <div id="touchup-empty" class="hidden center" style="padding:40px 0;">
+        <div class="thumb" style="width:55%;max-width:240px;margin:0 auto 20px;font-size:56px;"><i data-icon="repeat"></i></div>
         <p class="muted">아직 저장한 오늘의 룩이 없어요</p>
         <p class="muted small" style="margin-top:4px;">AI 스킨체크 결과 화면에서 "오늘 룩 저장하기"를 먼저 눌러주세요</p>
         <button class="btn-primary btn-block" data-nav="camera" style="margin-top:20px;">스킨체크 하러 가기</button>
       </div>
 
       <div id="touchup-step-now" class="hidden">
+        <div class="thumb" style="width:55%;max-width:240px;margin:0 auto 20px;font-size:56px;"><i data-icon="user"></i></div>
         <p class="muted center" id="touchup-saved-time" style="margin-bottom:16px;"></p>
         <button class="btn-primary btn-block" id="touchup-now-btn"><i data-icon="camera"></i> 지금 사진 찍기</button>
         <p class="muted small center hidden" id="touchup-now-error" style="margin-top:12px;color:var(--danger);"></p>
@@ -457,7 +459,8 @@ export const GOUN_MARKUP = `
 
     <div class="scroll-pad">
       <div id="lookfinder-step1">
-        <p class="muted" style="margin-bottom:16px;">따라하고 싶은 인플루언서 사진을 올려주세요. 화장이 잘 보이는 사진일수록 정확해요.</p>
+        <div class="thumb" style="width:55%;max-width:240px;margin:0 auto 20px;font-size:56px;"><i data-icon="camera"></i></div>
+        <p class="muted center" style="margin-bottom:16px;">따라하고 싶은 인플루언서 사진을 올려주세요. 화장이 잘 보이는 사진일수록 정확해요.</p>
         <label class="btn-primary btn-block" for="lookfinder-ref-input" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
           <i data-icon="camera"></i> 인플루언서 사진 선택하기
         </label>
@@ -465,7 +468,8 @@ export const GOUN_MARKUP = `
       </div>
 
       <div id="lookfinder-step2" class="hidden">
-        <p class="muted" style="margin-bottom:16px;">좋아요! 이제 내 사진을 찍으면, 이 화장을 내 얼굴에 입혀서 비교해드려요.</p>
+        <div class="thumb" style="width:55%;max-width:240px;margin:0 auto 20px;font-size:56px;"><i data-icon="user"></i></div>
+        <p class="muted center" style="margin-bottom:16px;">좋아요! 이제 내 사진을 찍으면, 이 화장을 내 얼굴에 입혀서 비교해드려요.</p>
         <button class="btn-primary btn-block" id="lookfinder-selfie-btn"><i data-icon="camera"></i> 내 사진 촬영하기</button>
       </div>
 
