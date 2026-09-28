@@ -129,9 +129,8 @@ export const GOUN_MARKUP = `
     </div>
 
     <div class="player-bottom">
-      <span class="grid-swatches" id="player-swatches" style="margin-bottom:8px;"></span>
       <p class="player-caption" id="player-caption">"이 쿠션 하나로 끝! 완전 강추"</p>
-      <button class="buy-pill hidden" id="player-buy-pill"><i data-icon="shopping-cart"></i> <span id="player-buy-text">구매하러 가기</span></button>
+      <div class="buy-pill-list" id="player-buy-list"></div>
       <button class="btn-primary btn-block try-btn" id="try-look-btn"><i data-icon="wand"></i> 이 화장법 따라해보기</button>
     </div>
   </section>

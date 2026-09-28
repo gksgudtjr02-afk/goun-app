@@ -310,30 +310,37 @@ export function initGounApp(root, supabase) {
       photoEl.classList.add('hidden');
       avatarEl.classList.remove('hidden');
     }
-    const swatchesEl = document.getElementById('player-swatches');
-    if (swatchesEl) {
-      swatchesEl.innerHTML = (v.products || [])
-        .map(p => `<span class="grid-swatch" style="background:${p.color}" title="${p.brand} · ${p.name}"></span>`)
-        .join('');
-    }
     const firstProduct = v.products?.[0];
     document.getElementById('player-buy-btn')?.classList.toggle('hidden', !firstProduct);
-    document.getElementById('player-buy-pill')?.classList.toggle('hidden', !firstProduct);
-    const buyTextEl = document.getElementById('player-buy-text');
-    if (buyTextEl && firstProduct) buyTextEl.textContent = `${firstProduct.brand} · ${firstProduct.name} 구매하러 가기`;
+    const buyListEl = document.getElementById('player-buy-list');
+    if (buyListEl) {
+      // 쿠팡처럼 매칭된 제품 전부를 각각 탭해서 바로 그 제품으로 갈 수 있게 —
+      // 하나로 뭉뚱그린 "구매하러 가기" 버튼 대신 제품별 알약 목록으로.
+      buyListEl.innerHTML = (v.products || []).map((p, i) => `
+        <button class="buy-pill" data-idx="${i}">
+          <span class="buy-pill-dot" style="background:${p.color}"></span>
+          ${p.brand} · ${p.name}
+        </button>
+      `).join('');
+      buyListEl.querySelectorAll('.buy-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const product = currentVideo?.products?.[Number(btn.getAttribute('data-idx'))];
+          if (!product) return;
+          window.open(`https://www.coupang.com/np/search?q=${encodeURIComponent(product.name)}`, '_blank', 'noopener,noreferrer');
+        });
+      });
+    }
     goTo('player');
   }
   document.getElementById('player-close')?.addEventListener('click', () => goTo('home'));
   document.getElementById('like-btn')?.addEventListener('click', function () {
     this.classList.toggle('liked');
   });
-  function openPlayerBuyLink() {
+  document.getElementById('player-buy-btn')?.addEventListener('click', () => {
     const product = currentVideo?.products?.[0];
     if (!product) return;
     window.open(`https://www.coupang.com/np/search?q=${encodeURIComponent(product.name)}`, '_blank', 'noopener,noreferrer');
-  }
-  document.getElementById('player-buy-btn')?.addEventListener('click', openPlayerBuyLink);
-  document.getElementById('player-buy-pill')?.addEventListener('click', openPlayerBuyLink);
+  });
   document.getElementById('try-look-btn')?.addEventListener('click', () => {
     showToast('이 룩의 컬러를 가상 연구소에 불러왔어요');
     goTo('lab');

@@ -282,6 +282,9 @@ html,body{
   display:inline-flex; align-items:center; gap:6px; background: rgba(255,255,255,.18);
   color:#fff; border:none; padding:8px 14px; border-radius: var(--radius-pill); font-size:12px; margin-bottom:12px;
 }
+.buy-pill-list{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.buy-pill-list .buy-pill{ margin-bottom:0; }
+.buy-pill-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 1.5px rgba(255,255,255,.7); }
 .try-btn{ margin-top:2px; }
 
 /* ---------- Sub header (inner pages) ---------- */
