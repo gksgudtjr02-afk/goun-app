@@ -31,7 +31,9 @@ export async function POST(request) {
   const data = await res.json();
 
   if (!res.ok) {
+    console.error("[makeup-transfer] start-failed", res.status, JSON.stringify(data));
     return NextResponse.json({ error: data?.error || data?.error_code || "request_failed" }, { status: res.status });
   }
+  console.log("[makeup-transfer] started", JSON.stringify(data));
   return NextResponse.json({ taskId: data?.data?.task_id });
 }

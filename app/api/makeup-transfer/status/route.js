@@ -20,7 +20,9 @@ export async function GET(request) {
   const data = await res.json();
 
   if (!res.ok) {
+    console.error("[makeup-transfer/status] poll-failed", res.status, JSON.stringify(data));
     return NextResponse.json({ error: data?.error || "request_failed" }, { status: res.status });
   }
+  console.log("[makeup-transfer/status] poll", JSON.stringify(data));
   return NextResponse.json(data?.data || {});
 }
