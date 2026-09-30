@@ -1679,6 +1679,7 @@ export function initGounApp(root, supabase) {
 
   let lookfinderColors = null;
   let lookfinderRefUrl = null;
+  let lookfinderRefFile = null; // 원본 파일 — Perfect Corp 연동 시 공개 URL로 다시 올릴 때 씀
   let lookfinderResultCanvas = null;
   let lookfinderBaseCanvas = null; // 배경 적용 전 원본(화장 적용된) 캔버스 — 배경 프리셋 바꿀 때마다 여기서 다시 합성
   let lookfinderMask = null; // segmentPerson() 결과 캐시 — 배경 프리셋끼리 전환할 때 매번 다시 분석하지 않도록
@@ -1706,6 +1707,7 @@ export function initGounApp(root, supabase) {
   function resetLookfinder() {
     lookfinderColors = null;
     lookfinderRefUrl = null;
+    lookfinderRefFile = null;
     lookfinderResultCanvas = null;
     lookfinderBaseCanvas = null;
     lookfinderMask = null;
@@ -1718,6 +1720,9 @@ export function initGounApp(root, supabase) {
   function loadImage(url) {
     return new Promise((resolve, reject) => {
       const img = new Image();
+      // 다른 도메인(Perfect Corp 결과 URL 등)에서 온 이미지를 캔버스에 그려도
+      // toDataURL/toBlob이 막히지 않으려면 필요함 — 같은 도메인/blob: URL엔 영향 없음.
+      img.crossOrigin = 'anonymous';
       img.onload = () => resolve(img);
       img.onerror = reject;
       img.src = url;
@@ -1742,6 +1747,7 @@ export function initGounApp(root, supabase) {
       }
       lookfinderColors = colors;
       lookfinderRefUrl = url;
+      lookfinderRefFile = file;
       showLookfinderStep('step2');
     } catch (err) {
       console.error('[lookfinder] analyze-error', err);
@@ -1758,6 +1764,46 @@ export function initGounApp(root, supabase) {
     }
     openPhotoCamera('내 사진 촬영', handleLookfinderSelfieCapture);
   });
+
+  // Perfect Corp "AI 메이크업 트랜스퍼" 연동 — PERFECTCORP_API_KEY가 서버에
+  // 없으면 /api/makeup-transfer가 501 "not_configured"를 주고, 그러면 이
+  // 함수가 던진 에러를 handleLookfinderSelfieCapture가 잡아서 조용히 무료
+  // MediaPipe 엔진으로 넘어감 (키 없는 지금도 화면엔 아무 차이 없음, 키
+  // 넣는 순간 자동으로 고화질 엔진이 켜짐).
+  async function uploadTempPublicPhoto(blob, path) {
+    const { error } = await supabase.storage.from('feed-photos').upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+    if (error) throw error;
+    const { data } = supabase.storage.from('feed-photos').getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  async function runPerfectCorpMakeupTransfer(selfieCanvas, refFile) {
+    const ts = Date.now();
+    const selfieBlob = await new Promise(resolve => selfieCanvas.toBlob(resolve, 'image/jpeg', 0.9));
+    const [srcUrl, refUrl] = await Promise.all([
+      uploadTempPublicPhoto(selfieBlob, `${currentUserId}/pc-tmp/src-${ts}.jpg`),
+      uploadTempPublicPhoto(refFile, `${currentUserId}/pc-tmp/ref-${ts}.jpg`),
+    ]);
+
+    const startRes = await fetch('/api/makeup-transfer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ srcUrl, refUrl }),
+    });
+    const startData = await startRes.json();
+    if (!startRes.ok) throw new Error(startData?.error || 'not_configured');
+
+    const deadline = Date.now() + 30000;
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 2000));
+      const statusRes = await fetch(`/api/makeup-transfer/status?taskId=${encodeURIComponent(startData.taskId)}`);
+      const statusData = await statusRes.json();
+      if (!statusRes.ok) throw new Error(statusData?.error || 'status_failed');
+      if (statusData.task_status === 'success' && statusData.url) return statusData.url;
+      if (statusData.task_status === 'error') throw new Error(statusData.error_message || statusData.error || 'transfer_failed');
+    }
+    throw new Error('timeout');
+  }
 
   async function handleLookfinderSelfieCapture(canvas) {
     if (!lookfinderColors || !currentUserId) return;
@@ -1776,7 +1822,31 @@ export function initGounApp(root, supabase) {
     document.getElementById('lookfinder-loading-text').textContent = '내 얼굴에 화장을 입히고 있어요...';
 
     try {
-      const { canvas: resultCanvas, faceFound } = await withTimeout(applyDetectedLook(canvas, lookfinderColors), 15000, '적용이 너무 오래 걸려요. 다시 시도해주세요');
+      let resultCanvas = null;
+      let faceFound = true;
+
+      // 1순위: Perfect Corp 고화질 엔진. 아직 API 키가 없으면 서버가
+      // "not_configured"로 즉시 거절하고, 아래 catch에서 조용히 2순위로 넘어감.
+      if (lookfinderRefFile) {
+        try {
+          const resultUrl = await withTimeout(runPerfectCorpMakeupTransfer(canvas, lookfinderRefFile), 30000, 'timeout');
+          const resultImg = await loadImage(resultUrl);
+          resultCanvas = document.createElement('canvas');
+          resultCanvas.width = resultImg.naturalWidth;
+          resultCanvas.height = resultImg.naturalHeight;
+          resultCanvas.getContext('2d').drawImage(resultImg, 0, 0);
+        } catch (pcErr) {
+          if (pcErr?.message !== 'not_configured') console.error('[lookfinder] perfectcorp-error', pcErr);
+        }
+      }
+
+      // 2순위: 무료 MediaPipe 엔진 (Perfect Corp 미설정이거나 실패했을 때)
+      if (!resultCanvas) {
+        const applied = await withTimeout(applyDetectedLook(canvas, lookfinderColors), 15000, '적용이 너무 오래 걸려요. 다시 시도해주세요');
+        resultCanvas = applied.canvas;
+        faceFound = applied.faceFound;
+      }
+
       if (!faceFound) {
         showToast('사진에서 얼굴을 찾지 못했어요. 다시 촬영해주세요');
         showLookfinderStep('step2');
