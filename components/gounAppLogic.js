@@ -1765,6 +1765,19 @@ export function initGounApp(root, supabase) {
     openPhotoCamera('내 사진 촬영', handleLookfinderSelfieCapture);
   });
 
+  // Perfect Corp 문서에 결과 URL 위치가 예시마다 다르게 나와있어서(데이터
+  // url, results 배열의 download_url, results 객체의 url 등) 실제 키로
+  // 테스트해보기 전까진 어떤 형태로 올지 확실치 않음 — 가능한 위치를 전부
+  // 확인하도록 방어적으로 작성함.
+  function extractPerfectCorpResultUrl(data) {
+    if (data.url) return data.url;
+    if (data.results?.url) return data.results.url;
+    if (Array.isArray(data.results) && data.results[0]) {
+      return data.results[0].download_url || data.results[0].url || null;
+    }
+    return null;
+  }
+
   // Perfect Corp "AI 메이크업 트랜스퍼" 연동 — PERFECTCORP_API_KEY가 서버에
   // 없으면 /api/makeup-transfer가 501 "not_configured"를 주고, 그러면 이
   // 함수가 던진 에러를 handleLookfinderSelfieCapture가 잡아서 조용히 무료
@@ -1799,8 +1812,14 @@ export function initGounApp(root, supabase) {
       const statusRes = await fetch(`/api/makeup-transfer/status?taskId=${encodeURIComponent(startData.taskId)}`);
       const statusData = await statusRes.json();
       if (!statusRes.ok) throw new Error(statusData?.error || 'status_failed');
-      if (statusData.task_status === 'success' && statusData.url) return statusData.url;
-      if (statusData.task_status === 'error') throw new Error(statusData.error_message || statusData.error || 'transfer_failed');
+      if (statusData.task_status === 'success') {
+        const resultUrl = extractPerfectCorpResultUrl(statusData);
+        if (resultUrl) return resultUrl;
+        throw new Error('결과 URL을 찾지 못했어요');
+      }
+      if (statusData.task_status === 'error') {
+        throw new Error(statusData.failure_reason || statusData.error_message || statusData.error || 'transfer_failed');
+      }
     }
     throw new Error('timeout');
   }
