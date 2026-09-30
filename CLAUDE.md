@@ -26,7 +26,13 @@
      - **서버 라우트 작성 완료**: `app/api/makeup-transfer/route.js`(태스크 시작), `app/api/makeup-transfer/status/route.js`(태스크 상태 확인) — 둘 다 `PERFECTCORP_API_KEY` 환경변수를 읽어서 Perfect Corp에 Bearer 인증으로 요청을 중계함(키가 브라우저에 노출 안 되도록 서버에서만 처리). **`PERFECTCORP_API_KEY`가 아직 설정 안 돼있어서, 지금은 두 라우트 다 501 "not_configured"만 반환함.**
      - **클라이언트 연동 완료**: `components/gounAppLogic.js`의 `handleLookfinderSelfieCapture()`가 촬영한 셀피 + 레퍼런스 사진을 먼저 `runPerfectCorpMakeupTransfer()`로 시도함 — 내부적으로 두 사진을 `feed-photos` 버킷의 `{userId}/pc-tmp/` 경로에 올려서 공개 URL을 만든 뒤 위 두 라우트를 호출/폴링함. **API 키가 없으면(지금 상태) 조용히 실패하고 자동으로 기존 무료 MediaPipe 엔진(`applyDetectedLook`)으로 넘어감** — 화면엔 아무 차이 없이 그대로 작동 중. **Vercel 환경변수에 `PERFECTCORP_API_KEY`만 추가하면 별도 코드 수정 없이 바로 고화질 엔진으로 전환됨.**
      - **아직 안 한 것**: 실제 키가 없어서 한 번도 실제 호출 테스트를 못 해봄 — 키 받으면 첫 실행에서 에러 날 가능성 있으니 로그(`console.error('[lookfinder] perfectcorp-error', ...)`) 확인하며 검증 필요. `feed-photos` 버킷의 `pc-tmp/` 임시 업로드 파일은 자동 정리 로직이 없음(추후 필요시 정리 작업 추가 고려).
-     - **API 키 발급**: `perfectcorp.com/ko/business/ai-apis`의 "AI 메이크업 트랜스퍼" 카드 → "API 키 관련 문의" 버튼, 또는 `YouCamOnlineEditor_API@perfectcorp.com`으로 직접 문의.
+     - **API 키 발급**: `perfectcorp.com/ko/business/ai-apis`의 "AI 메이크업 트랜스퍼" 카드 → "API 키 관련 문의" 버튼, 또는 `YouCamOnlineEditor_API@perfectcorp.com`으로 직접 문의 — 2026-09에 사용자가 이 이메일로 문의 발송함, 답장 대기 중.
+     - **API 키 콘솔 발견 (2026-09, 확인 필요)**: `https://yce.makeupar.com/api-console/en/api-keys/`에서 키를 직접 확인/발급할 수 있는 것처럼 보임 — 영업 문의 답장을 안 기다리고 여기서 바로 로그인/가입해서 셀프서비스로 키를 받을 수 있을지도 모름. 아직 실제로 들어가서 확인은 안 함.
+   - **Perfect Corp AI 메이크업 가상 체험(makeup-vto) — 뷰티랩용, 서버 라우트 준비만 해둠 (2026-09, ⚠ 필드명 미검증)**: 사용자가 "뷰티랩 연동을 더 우선하고 싶다"고 해서 이것도 미리 만들어둠. 트랜스퍼와 달리 **전체 OpenAPI 스펙 파일은 못 받고, 소개 글+통합 가이드만 확인함**:
+     - 엔드포인트: `POST /v2.0/task/makeup-vto` (트랜스퍼의 `/s2s/v2.0/...`와 경로가 다름, 같은 서버 `yce-api-01.makeupar.com`로 추정), 인증도 동일하게 `Authorization: Bearer <TOKEN>`. 트랜스퍼와 같은 비동기 task_id 발급→폴링 방식.
+     - 요청 형태: `{version, src_file_url 또는 src_file_id, effects: [...]}` — `effects` 배열의 각 항목은 `category`("blush"/"eye_liner"/"skin_smooth" 등) + `pattern.name`(제품 카탈로그의 `label`과 일치해야 함, 예: blush.json) + `palettes`(색상 hex/texture/colorIntensity, texture가 satin/shimmer면 추가 필드 필요).
+     - **⚠ `src_file_url` 등 정확한 필드명은 트랜스퍼 API 명명 규칙에서 유추한 추정치임 — 진짜 스펙 파일을 못 받아서 100% 확신 없음.** 실제 키 받으면 공식 플레이그라운드(`http://yce.makeupar.com/api-console/en/api-playground/ai-makeup-virtual-try-on/`)에서 먼저 테스트해서 검증할 것.
+     - 서버 라우트: `app/api/makeup-vto/route.js`, `app/api/makeup-vto/status/route.js` — 트랜스퍼와 같은 패턴(키 없으면 501, 있으면 Bearer로 중계). **아직 어떤 화면에도 연결 안 함** — 뷰티랩의 "발라보기" 진입점 자체가 품질 문제로 숨겨져 있는 상태라(위 "발라보기(가상 메이크업 AR)" 항목 참고), 필드명 검증 + 그 진입점을 다시 켤지 결정이 먼저 필요함.
 3. 발라보기(AR) — ⏸ 숨김 처리됨 (위 항목 참고, Perfect Corp API 전환 대기)
 4. 구매 — ⚠ 부분적 (쿠팡 문구로 통일했지만 실제 결제/커미션 연동은 사업자등록 이후)
 
